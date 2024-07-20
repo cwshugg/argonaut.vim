@@ -3,29 +3,50 @@
 " DEBUGGING - TODO - REMOVE WHEN DONE DEVELOPING
 function! argonaut#commands#test(...) abort
     try
-        let s:a = argonaut#argument#new()
-        call argonaut#argument#set_presence_required(s:a, 0)
-        call argonaut#argument#set_presence_required(s:a, 1)
-        call argonaut#argument#set_value_required(s:a, 1)
-        echo 'ARGUMENT OBJECT: ' . argonaut#argument#to_string(s:a)
+        let s:a1 = argonaut#arg#new()
+        call argonaut#arg#set_presence_required(s:a1, 1)
+        call argonaut#arg#set_value_required(s:a1, 1)
+        echo 'ARGUMENT OBJECT: ' . argonaut#arg#to_string(s:a1)
         
-        let s:aid = argonaut#argument_id#new()
-        call argonaut#argument_id#set_prefix(s:aid, '-')
-        call argonaut#argument_id#set_name(s:aid, 'h')
-        call argonaut#argument#add_identifier(s:a, s:aid)
-        echo 'ARGUMENT OBJECT: ' . argonaut#argument#to_string(s:a)
+        let s:aid = argonaut#argid#new()
+        call argonaut#argid#set_prefix(s:aid, '-')
+        call argonaut#argid#set_name(s:aid, 'h')
+        call argonaut#arg#add_argid(s:a1, s:aid)
+        echo 'ARGUMENT OBJECT: ' . argonaut#arg#to_string(s:a1)
         
-        let s:aid = argonaut#argument_id#new()
-        call argonaut#argument_id#set_prefix(s:aid, '--')
-        call argonaut#argument_id#set_name(s:aid, 'hello')
-        call argonaut#argument#add_identifier(s:a, s:aid)
-        echo 'ARGUMENT OBJECT: ' . argonaut#argument#to_string(s:a)
+        let s:aid = argonaut#argid#new()
+        call argonaut#argid#set_prefix(s:aid, '--')
+        call argonaut#argid#set_name(s:aid, 'hello')
+        call argonaut#arg#add_argid(s:a1, s:aid)
+        echo 'ARGUMENT OBJECT: ' . argonaut#arg#to_string(s:a1)
+
+        let s:a2 = argonaut#arg#new()
+        call argonaut#arg#set_presence_required(s:a2, 0)
+        call argonaut#arg#set_value_required(s:a2, 0)
+        let s:aid = argonaut#argid#new()
+        call argonaut#argid#set_prefix(s:aid, '+')
+        call argonaut#argid#set_name(s:aid, 'gb')
+        call argonaut#arg#add_argid(s:a2, s:aid)
+        let s:aid = argonaut#argid#new()
+        call argonaut#argid#set_prefix(s:aid, '++')
+        call argonaut#argid#set_name(s:aid, 'goodbye')
+        call argonaut#arg#add_argid(s:a2, s:aid)
         
-        let s:aid = argonaut#argument_id#new()
-        call argonaut#argument_id#set_prefix(s:aid, '++')
-        call argonaut#argument_id#set_name(s:aid, 'HELLO')
-        call argonaut#argument#add_identifier(s:a, s:aid)
-        echo 'ARGUMENT OBJECT: ' . argonaut#argument#to_string(s:a)
+        let s:set = argonaut#argset#new()
+        echo 'ARGSET: ' . argonaut#argset#to_string(s:set)
+        call argonaut#argset#add_arg(s:set, s:a1)
+        echo 'ARGSET: ' . argonaut#argset#to_string(s:set)
+        call argonaut#argset#add_arg(s:set, s:a2)
+        echo 'ARGSET: ' . argonaut#argset#to_string(s:set)
+    
+        let s:str = '++goodbye'
+        let s:a = argonaut#argset#cmp(s:set, s:str)
+        if argonaut#utils#is_null(s:a)
+            echo 'ARGSET CMP AGAINST "' . s:str . '" = NULL'
+        else
+            echo 'ARGSET CMP AGAINST "' . s:str . '" = ' . argonaut#arg#to_string(s:a)
+        endif
+
     catch
         echoerr 'Caught an error: ' . v:exception
     endtry
