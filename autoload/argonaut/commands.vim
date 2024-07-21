@@ -4,7 +4,7 @@
 function! argonaut#commands#test(...) abort
     try
         let s:a1 = argonaut#arg#new()
-        call argonaut#arg#set_presence_required(s:a1, 1)
+        call argonaut#arg#set_presence_count_min(s:a1, 1)
         call argonaut#arg#set_value_required(s:a1, 1)
         echo 'ARGUMENT OBJECT: ' . argonaut#arg#to_string(s:a1)
         
@@ -21,7 +21,8 @@ function! argonaut#commands#test(...) abort
         echo 'ARGUMENT OBJECT: ' . argonaut#arg#to_string(s:a1)
 
         let s:a2 = argonaut#arg#new()
-        call argonaut#arg#set_presence_required(s:a2, 0)
+        call argonaut#arg#set_presence_count_min(s:a2, 0)
+        call argonaut#arg#set_presence_count_max(s:a2, 4)
         call argonaut#arg#set_value_required(s:a2, 0)
         let s:aid = argonaut#argid#new()
         call argonaut#argid#set_prefix(s:aid, '+')

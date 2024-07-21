@@ -50,4 +50,3 @@ function! argonaut#utils#str_cmp_case_insensitive(str1, str2) abort
     return a:str1 is? a:str2
 endfunction
 
-

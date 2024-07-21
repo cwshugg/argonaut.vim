@@ -6,15 +6,22 @@
 "
 "  * `identifiers` - A list of argument identifier objects, used to recognize
 "    the argument when the user specifies it.
-"  * `presence_required` - A boolean, indicating if this argument *must* be
-"    specified by the user.
+"  * `presence_count_min` - The minimum number of times this argument must
+"    occur, if it occurs at all. (If this argument is present in the user's
+"    arguments, but the number of times it is present is less than the
+"    minimum, an error is thrown.)
+"  * `presence_count_max` - The maximum number of times this argument can
+"    occur, if it occurs at all. (If this argument is present in the user's
+"    arguments, but the number of times it is present is more than the
+"    maximum, an error is thrown.)
 "  * `value_required` - A boolean, indicating if this argument *must* be
 "    followed by a value.
 
 " Template object used to create and format all argument objects.
 let s:arg_template = {
         \ 'identifiers': [],
-        \ 'presence_required': 0,
+        \ 'presence_count_min': 1,
+        \ 'presence_count_max': 1,
         \ 'value_required': 0
     \ }
 
@@ -31,7 +38,9 @@ endfunction
 function! argonaut#arg#verify(arg) abort
     for s:key in keys(s:arg_template)
         if !has_key(a:arg, s:key)
-            call argonaut#utils#panic('the provided object does not appear to be a valid arg object')
+            let s:errmsg = 'the provided object does not appear to be a valid ' .
+                         \ 'arg object'
+            call argonaut#utils#panic(s:errmsg)
         endif
     endfor
 endfunction
@@ -60,7 +69,8 @@ function! argonaut#arg#to_string(arg) abort
     let s:result .= '[identifiers: ' . s:aid_str . '] '
 
     " add the rest of the properties to the string
-    let s:result .= '[presence_required: ' . a:arg.presence_required . '] '
+    let s:result .= '[presence_count_min: ' . a:arg.presence_count_min . '] '
+    let s:result .= '[presence_count_max: ' . a:arg.presence_count_max . '] '
     let s:result .= '[value_required: ' . a:arg.value_required . '] '
     return s:result
 endfunction
@@ -72,16 +82,48 @@ function! argonaut#arg#add_argid(arg, aid) abort
     call add(a:arg.identifiers, a:aid)
 endfunction
 
-" Setter for `presence_required`.
-function! argonaut#arg#set_presence_required(arg, presence_required) abort
+" Setter for `presence_count_min`.
+function! argonaut#arg#set_presence_count_min(arg, presence_count_min) abort
     call argonaut#arg#verify(a:arg)
-    let a:arg.presence_required = argonaut#utils#sanitize_bool(a:presence_required)
+    let s:count = argonaut#utils#sanitize_value(a:presence_count_min)
+
+    " make sure the provided value is zero, or a positive integer. If it's
+    " zero, that means the argument is not required to be present
+    if s:count < 0
+        let s:errmsg = 'the presence count minimum for an argument must be ' .
+                     \ 'either zero or a positive integer ' .
+                     \ '(you provided: ' . s:count . ')'
+        call argonaut#utils#panic(s:errmsg)
+    endif
+    let a:arg.presence_count_min = s:count
 endfunction
 
-" Getter for `presence_required`.
-function! argonaut#arg#get_presence_required(arg) abort
+" Getter for `presence_count_min`.
+function! argonaut#arg#get_presence_count_min(arg) abort
     call argonaut#arg#verify(a:arg)
-    return get(a:arg, 'presence_required')
+    return get(a:arg, 'presence_count_min')
+endfunction
+
+" Setter for `presence_count_max`.
+function! argonaut#arg#set_presence_count_max(arg, presence_count_max) abort
+    call argonaut#arg#verify(a:arg)
+    let s:count = argonaut#utils#sanitize_value(a:presence_count_max)
+
+    " for the count maximum, positive values indicate an upper maximum, while
+    " any negative value indicates an unlimited maximum. Zero is the one value
+    " that this field cannot hold
+    if s:count == 0
+        let s:errmsg = 'the presence count maximum for an argument must not ' .
+                     \ 'be zero )you provided: ' . s:count . ')'
+        call argonaut#utils#panic(s:errmsg)
+    endif
+    let a:arg.presence_count_max = s:count
+endfunction
+
+" Getter for `presence_count_max`.
+function! argonaut#arg#get_presence_count_max(arg) abort
+    call argonaut#arg#verify(a:arg)
+    return get(a:arg, 'presence_count_max')
 endfunction
 
 " Setter for `value_required`.

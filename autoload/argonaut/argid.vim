@@ -34,7 +34,9 @@ endfunction
 function! argonaut#argid#verify(aid) abort
     for s:key in keys(s:argid_template)
         if !has_key(a:aid, s:key)
-            call argonaut#utils#panic('the provided object does not appear to be a valid argid object')
+            let s:errmsg = 'the provided object does not appear to be a valid ' .
+                         \ 'argid object'
+            call argonaut#utils#panic(s:errmsg)
         endif
     endfor
 endfunction
@@ -52,7 +54,18 @@ function! argonaut#argid#set_name(aid, name) abort
     " make sure the name isn't null
     let s:name = argonaut#utils#sanitize_value(a:name)
     if argonaut#utils#is_null(s:name)
-        call argonaut#utils#panic('an argid (argument identifier) cannot have a null name')
+        let s:errmsg = 'an argid (argument identifier) cannot have a null ' .
+                     \ 'name'
+        call argonaut#utils#panic(s:errmsg)
+    endif
+
+    " make sure the name doesn't contain whitespace
+    let s:pieces = split(s:name)
+    if len(s:pieces) > 1
+        let s:errmsg = 'an argid (argument identifier) cannot have a name ' .
+                     \ 'containing whitespace ' .
+                     \ '(you provided: "' . s:name . '")'
+        call argonaut#utils#panic(s:errmsg)
     endif
 
     let a:aid.name = s:name
@@ -71,7 +84,9 @@ function! argonaut#argid#set_prefix(aid, prefix) abort
     " make sure the prefix isn't null
     let s:prefix = argonaut#utils#sanitize_value(a:prefix)
     if argonaut#utils#is_null(s:prefix)
-        call argonaut#utils#panic('an argid (argument identifier) cannot have a null prefix')
+        let s:errmsg = 'an argid (argument identifier) cannot have a null ' .
+                     \ 'prefix'
+        call argonaut#utils#panic(s:errmsg)
     endif
 
     let a:aid.prefix = s:prefix
