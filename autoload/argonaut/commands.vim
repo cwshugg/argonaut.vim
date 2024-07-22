@@ -52,7 +52,7 @@ function! argonaut#commands#test(...) abort
         let s:parser = argonaut#argparser#new()
         call argonaut#argparser#set_argset(s:parser, s:set)
 
-        let s:parse_str = "hello there     ++goodbye \"my name\\\" is 'connor' \"     testing --hello"
+        let s:parse_str = "hello there     ++goodbye \"my name\\\" is 'connor' \"     testing --hello $( ls -al) ${HOME} ${YOOO}"
         let s:parse_result = argonaut#argparser#parse(s:parser, s:parse_str)
     catch
         echoerr 'Caught an error: ' . v:exception

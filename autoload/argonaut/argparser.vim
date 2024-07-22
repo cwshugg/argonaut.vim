@@ -18,12 +18,21 @@ let s:argparser_template = {
     \ 'args_unnamed': []
 \ }
 
+" Template object used to create 'splitbits', which is an intermediate object
+" used in the argparser to parse arguments from a raw string.
+let s:argparser_splitbit_template = {
+    \ 'text': '',
+    \ 'nesting_pair': v:null
+\ }
+
 " Nesting pairs used for parsing. These are used to carefully split
 " white-space-separated strings while also keeping together text that is
 " contained by these 'nesting pairs'.
 let s:argparser_nesting_pairs = [
-    \ {'opener': '"', 'closer': '"'},
-    \ {'opener': "'", 'closer': "'"}
+    \ {'opener': '"',   'closer': '"',  'postprocess': v:null},
+    \ {'opener': "'",   'closer': "'",  'postprocess': v:null},
+    \ {'opener': "$(",  'closer': ")",  'postprocess': 'shell'},
+    \ {'opener': "${",  'closer': "}",  'postprocess': 'envvar'}
 \ ]
 
 
@@ -59,8 +68,18 @@ function! argonaut#argparser#get_argset(parser) abort
     return get(a:parser, 'argset')
 endfunction
 
+" The main parser function. Takes in the parser and a string to parse.
+" Arguments are parsed and they are returned.
+function! argonaut#argparser#parse(parser, str) abort
+    " first, split the string into pieces
+    let s:splitbits = argonaut#argparser#split(a:parser, a:str)
+    
+    echo s:splitbits
+    " TODO - implement the rest
+endfunction
+
 " Attempts to split a given string by whitespace, while also factoring in
-" strings surrounded by quotes.
+" strings surrounded by quotes. Returns a list of splitbit objects.
 function! argonaut#argparser#split(parser, str) abort
     let s:current_np = v:null
     let s:current_arg = v:null
@@ -68,7 +87,9 @@ function! argonaut#argparser#split(parser, str) abort
     
     " walk through the string, character by character
     let s:str_len = len(a:str)
-    for s:idx in range(s:str_len + 1)
+    let s:previous_backslash = 0
+    let s:idx = 0
+    while s:idx <= s:str_len
         " to make the below logic simpler, this loop is doing one extra
         " iteration. On the final iteration, the 'current character' will be a
         " whitespace
@@ -84,7 +105,7 @@ function! argonaut#argparser#split(parser, str) abort
             " string with the current string
             for s:np in s:argparser_nesting_pairs
                 " make sure we have enough room left in the string to compare with
-                let s:np_opener = get(s:np, 'opener')
+                let s:np_opener = s:np.opener
                 let s:np_cmp_len = len(s:np_opener)
                 if s:np_cmp_len > s:str_len - s:idx
                     continue
@@ -97,14 +118,17 @@ function! argonaut#argparser#split(parser, str) abort
                     " `s:current_np` to track the new nesting pair, and start
                     " a new argument
                     let s:current_np = s:np
-                    let s:current_arg = ''
+                    let s:current_arg = s:splitbit_new(s:current_np)
                     break
                 endif
             endfor
 
             " if the above loop succeeded in finding a nesting pair, proceed
-            " to the next iteration of the main loop
+            " to the next iteration of the main loop. Adjust our loop index
+            " such that the next character we land on is the first one that
+            " occurs after the nesting pair's opener string
             if s:current_np isnot v:null
+                let s:idx += len(s:current_np.opener)
                 continue
             endif
             
@@ -117,7 +141,7 @@ function! argonaut#argparser#split(parser, str) abort
         " otherwise, if we currently ARE tracking a nesting pair...
         else
             " make sure we have enough room left in the string to compare with
-            let s:np_closer = get(s:current_np, 'closer')
+            let s:np_closer = s:current_np.closer
             let s:np_cmp_len = len(s:np_closer)
             if s:np_cmp_len <= s:str_len - s:idx
                 " if the current string matches with the nesting pair's closer, we
@@ -141,7 +165,7 @@ function! argonaut#argparser#split(parser, str) abort
             endif
         " otherwise, start a new argument if we currently don't have one
         elseif s:current_arg is v:null
-            let s:current_arg = ''
+            let s:current_arg = s:splitbit_new(v:null)
         endif
 
         " finally, add the next character to our current argument string, as
@@ -152,10 +176,13 @@ function! argonaut#argparser#split(parser, str) abort
             " if we're looking at a backslash, we want to skip the backslash,
             " but remember that the next character is escaped
             if !s:previous_backslash
-                let s:current_arg .= s:char
+                call s:splitbit_add_text(s:current_arg, s:char)
             endif
         endif
-    endfor
+        
+        " move to the next character
+        let s:idx += 1
+    endwhile
     
     " at this point, we shouldn't have an unfinished argument, due to our
     " extra iteration in the above loop
@@ -164,18 +191,66 @@ function! argonaut#argparser#split(parser, str) abort
                      \ '"' . a:str . '"'
         call argonaut#utils#panic(s:errmsg)
     endif
+
+    " before returning the arguments, run post-processing on each of them
+    for s:arg in s:args
+        call s:splitbit_postprocess(s:arg)
+    endfor
     
     return s:args
 endfunction
 
-" The main parser function. Takes in the parser and a string to parse.
-" Arguments are parsed and they are returned.
-function! argonaut#argparser#parse(parser, str) abort
-    " first, split the string into pieces
-    let s:pieces = argonaut#argparser#split(a:parser, a:str)
-    
-    echo 'ARGUMENTS:'
-    echo s:pieces
-    " TODO - implement the rest
+
+" ========================= String Splitting Helpers ========================= "
+" A 'splitbit' represents a single string argument that was created during the
+" parsing of the user's input string.
+"
+" A splitbit can be as simple as the word 'hello' surrounded by whitespace,
+" but it can also be parsed via nesting pairs, each representing different
+" intentions. For example:
+"
+"  * '$(ls -al)' - the text 'ls -al' should be executed on the shell
+"  * '${HOME}' - the text 'HOME' should be interpreted as an environment
+"    variable
+
+" Constructs a new splitbit object, given text and an associated nesting pair.
+function! s:splitbit_new(nesting_pair) abort
+    let s:result = deepcopy(s:argparser_splitbit_template)
+    let s:result.nesting_pair = a:nesting_pair
+    return s:result
+endfunction
+
+" Appends the given string to the splitbit's text.
+function! s:splitbit_add_text(splitbit, str) abort
+    let a:splitbit.text .= a:str
+endfunction
+
+" Examines the text and nesting pair within the given splitbit and performs
+" any necessary post-processing.
+"
+" Examples of post-processing would be running shell commands or extracting
+" environment variables.
+"
+" Any postprocessing that is done may modify the text of the splitbit.
+function! s:splitbit_postprocess(splitbit) abort
+    " if there is no nesting pair, then there's no post-processing to do
+    let s:np = a:splitbit.nesting_pair
+    if s:np is v:null
+        return
+    endif
+
+    " if the nesting pair has no post-process field, we're done
+    if s:np.postprocess is v:null
+        return
+    endif
+
+    " otherwise, use the post-process value to determine what to do
+    if s:np.postprocess == 'envvar'
+        let s:envvar = argonaut#utils#get_env(trim(a:splitbit.text))
+        let a:splitbit.text = s:envvar is v:null ? '' : s:envvar
+    elseif s:np.postprocess == 'shell'
+        let s:shellout = argonaut#utils#run_shell_command(a:splitbit.text)
+        let a:splitbit.text = s:shellout
+    endif
 endfunction
 

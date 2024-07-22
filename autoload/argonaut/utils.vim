@@ -55,3 +55,17 @@ function! argonaut#utils#char_is_whitespace(char) abort
     return match(a:char, '\s\|\n\|\t\|\r') == 0
 endfunction
 
+" ============================ Shell/Environment ============================= "
+" Returns the value of the given environment variable, or v:null if it doesn't
+" exist.
+function! argonaut#utils#get_env(name) abort
+    return getenv(a:name)
+endfunction
+
+" Returns the value of the given environment variable, or v:null if it doesn't
+" exist.
+function! argonaut#utils#run_shell_command(text) abort
+    :silent let s:result = system(a:text)
+    return s:result
+endfunction
+
