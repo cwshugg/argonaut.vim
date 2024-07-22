@@ -123,7 +123,7 @@ function! argonaut#argid#cmp(aid, str) abort
 
     " compare differently, depending on the case sensitivity
     if a:aid.case_sensitive
-        return argonaut#utils#str_cmp_case_sensitive(s:aid_str, a:str)
+        return argonaut#utils#str_cmp(s:aid_str, a:str)
     endif
     return argonaut#utils#str_cmp_case_insensitive(s:aid_str, a:str)
 endfunction

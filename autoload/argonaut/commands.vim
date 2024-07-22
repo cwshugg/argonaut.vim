@@ -47,7 +47,13 @@ function! argonaut#commands#test(...) abort
         else
             echo 'ARGSET CMP AGAINST "' . s:str . '" = ' . argonaut#arg#to_string(s:a)
         endif
+        
+        " ARG PARSER
+        let s:parser = argonaut#argparser#new()
+        call argonaut#argparser#set_argset(s:parser, s:set)
 
+        let s:parse_str = "hello there     ++goodbye \"my name\\\" is 'connor' \"     testing --hello"
+        let s:parse_result = argonaut#argparser#parse(s:parser, s:parse_str)
     catch
         echoerr 'Caught an error: ' . v:exception
     endtry

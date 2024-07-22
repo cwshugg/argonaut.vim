@@ -41,12 +41,17 @@ endfunction
 
 " ============================== String Helpers ============================== "
 " Compares two strings case-sensitively.
-function! argonaut#utils#str_cmp_case_sensitive(str1, str2) abort
+function! argonaut#utils#str_cmp(str1, str2) abort
     return a:str1 is# a:str2
 endfunction
 
 " Compares two strings case-insensitively.
 function! argonaut#utils#str_cmp_case_insensitive(str1, str2) abort
     return a:str1 is? a:str2
+endfunction
+
+" Examines a single character and returns true if it's whitespace.
+function! argonaut#utils#char_is_whitespace(char) abort
+    return match(a:char, '\s\|\n\|\t\|\r') == 0
 endfunction
 
