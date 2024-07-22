@@ -19,11 +19,11 @@
 
 " Template object used to create and format all argument objects.
 let s:arg_template = {
-        \ 'identifiers': [],
-        \ 'presence_count_min': 1,
-        \ 'presence_count_max': 1,
-        \ 'value_required': 0
-    \ }
+    \ 'identifiers': [],
+    \ 'presence_count_min': 1,
+    \ 'presence_count_max': 1,
+    \ 'value_required': 0
+\ }
 
 
 " ======================== Argument Object Interface ========================= "

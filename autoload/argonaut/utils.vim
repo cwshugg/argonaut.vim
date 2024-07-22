@@ -4,7 +4,7 @@
 " ============================== Error Handling ============================== "
 " Throws an error with the given message.
 function! argonaut#utils#panic(msg) abort
-    throw 'argonaut error: ' . a:msg
+    throw 'argonaut: ' . a:msg
 endfunction
 
 

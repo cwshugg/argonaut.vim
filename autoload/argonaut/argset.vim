@@ -7,8 +7,8 @@
 
 " Template object used to create and format all argument set objects.
 let s:argset_template = {
-        \ 'arguments': [],
-    \ }
+    \ 'arguments': [],
+\ }
 
 
 " ============================ Argument Set Index ============================ "

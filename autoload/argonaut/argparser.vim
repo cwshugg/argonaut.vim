@@ -11,11 +11,10 @@
 "    provided argument specifications in the argset. (Basically, any other
 "    argument the user wasn't explicitly looking for will end up in here.)
 
-" Template object used to create and format all argument objects.
+" Template object used to create and format the argument parser.
 let s:argparser_template = {
     \ 'argset': v:null,
     \ 'args': [],
-    \ 'args_unnamed': []
 \ }
 
 " Template object used to create 'splitbits', which is an intermediate object
@@ -23,6 +22,13 @@ let s:argparser_template = {
 let s:argparser_splitbit_template = {
     \ 'text': '',
     \ 'nesting_pair': v:null
+\ }
+
+" Template object used to create and format individual argument parser
+" results.
+let s:argparser_result_template = {
+    \ 'arg': v:null,
+    \ 'value': 1
 \ }
 
 " Nesting pairs used for parsing. These are used to carefully split
@@ -66,16 +72,6 @@ endfunction
 function! argonaut#argparser#get_argset(parser) abort
     call argonaut#argparser#verify(a:parser)
     return get(a:parser, 'argset')
-endfunction
-
-" The main parser function. Takes in the parser and a string to parse.
-" Arguments are parsed and they are returned.
-function! argonaut#argparser#parse(parser, str) abort
-    " first, split the string into pieces
-    let s:splitbits = argonaut#argparser#split(a:parser, a:str)
-    
-    echo s:splitbits
-    " TODO - implement the rest
 endfunction
 
 " Attempts to split a given string by whitespace, while also factoring in
@@ -192,12 +188,216 @@ function! argonaut#argparser#split(parser, str) abort
         call argonaut#utils#panic(s:errmsg)
     endif
 
-    " before returning the arguments, run post-processing on each of them
-    for s:arg in s:args
-        call s:splitbit_postprocess(s:arg)
-    endfor
-    
     return s:args
+endfunction
+
+" The main parser function. Takes in the parser and a string to parse.
+" Arguments are parsed and they are returned.
+function! argonaut#argparser#parse(parser, str) abort
+    call argonaut#argparser#verify(a:parser)
+    let a:parser.args = []
+
+    " before splitting the string and processing it, we'll create temporary
+    " dictionary fields within each of the argument specification objects in
+    " the parser's argument set. These will be used to count the number of
+    " occurrences we find below
+    for s:arg in a:parser.argset.arguments
+        let s:arg.presence_count = 0
+    endfor
+
+    " first, split the string into pieces
+    let s:splitbits = argonaut#argparser#split(a:parser, a:str)
+    
+    " after receiving the splitbits, postprocess each. (this'll retrieve
+    " environment variables, run shell commands, etc.)
+    let s:splitbits_len = len(s:splitbits)
+    let s:last_result = v:null
+    for s:idx in range(s:splitbits_len)
+        let s:splitbit = s:splitbits[s:idx]
+        call s:splitbit_postprocess(s:splitbit)
+
+        " search the parser's argument set to determine if the text identifies
+        " with any of the argument specifications within
+        let s:match = argonaut#argset#cmp(a:parser.argset, s:splitbit.text)
+
+        " FIXME - DEBUGGING ------------------------------------------------- "
+        echo 'Does "' . s:splitbit.text . '" match any identifiers?'
+        echo s:match is v:null ? 'NO' : s:match
+        " FIXME - DEBUGGING ------------------------------------------------- "
+
+        " create an argument parser result object and store it
+        let s:new_result = s:argparser_result_new(s:match, v:null)
+
+        " if this argument doesn't match one of the arguments in the argument
+        " set, there are one of two possibilities:
+        if s:match is v:null
+            " possibility 1: the last iteration's result was stored, which
+            " means the previous argument requires a value. Save this
+            " splitbit's value to the previous result
+            echo 'LAST RESULT:'
+            echo s:last_result
+            if s:last_result isnot v:null
+                let s:last_result.value = s:splitbit.text
+                " FIXME - DEBUGGING ----------------------------------------- "
+                echo 'VALUE FOR PREVIOUS ARG:'
+                echo s:last_result
+                " FIXME - DEBUGGING ----------------------------------------- "
+                let s:last_result = v:null
+                continue
+            endif
+
+            " possibility 2: this is a plain-old unnamed argument (i.e.
+            " something that wasn't recognized as an argument). Update the new
+            " result to hold the splitbit's value and add it to the parser
+            let s:new_result.value = s:splitbit.text
+            call add(a:parser.args, s:new_result)
+            " FIXME - DEBUGGING --------------------------------------------- "
+            echo 'UNNAMED ARG:'
+            echo s:new_result
+            " FIXME - DEBUGGING --------------------------------------------- "
+            continue
+        endif
+
+        " otherwise, the argument DOES match one of the speciufied arguments.
+        " Make sure we aren't expecting a value from the previous iteration
+        let s:arg_with_missing_value = v:null
+        if s:last_result isnot v:null
+            let s:arg_with_missing_value = s:last_result
+        elseif s:match.value_required && s:idx == s:splitbits_len - 1
+            let s:arg_with_missing_value = s:new_result
+        endif
+        if s:arg_with_missing_value isnot v:null
+            let s:arg = s:arg_with_missing_value.arg
+            let s:arg_str = argonaut#argid#to_string(s:arg.identifiers[0])
+            let s:errmsg = 'the argument "' . s:arg_str . '" expects a value to ' .
+                         \ 'be specified alongside it'
+            call argonaut#utils#panic(s:errmsg)
+        endif
+
+        " increment the result's presence counter and add it to the parser
+        let s:match.presence_count += 1
+        call add(a:parser.args, s:new_result)
+
+        " if the matched argument specification requires that a value be
+        " specified along with it, set `s:last_result` so we can capture this
+        " value on the next iteration
+        if s:match.value_required
+            let s:last_result = s:new_result
+        endif
+    endfor
+
+    " iterate through the argument set's argument specifications and count the
+    " number of occurrences. Make sure they're within the required range
+    for s:arg in a:parser.argset.arguments
+        " the minimum amount must be met
+        if s:arg.presence_count < s:arg.presence_count_min
+            let s:arg_str = argonaut#argid#to_string(s:arg.identifiers[0])
+            let s:errmsg = 'the argument "' . s:arg_str . '" must be specified ' .
+                         \ 'at least ' . s:arg.presence_count_min . ' time(s)'
+            call argonaut#utils#panic(s:errmsg)
+        endif
+
+        " the maximum amount must not be exceeded
+        if s:arg.presence_count > s:arg.presence_count_max
+            let s:arg_str = argonaut#argid#to_string(s:arg.identifiers[0])
+            let s:errmsg = 'the argument "' . s:arg_str . '" must not be specified ' .
+                         \ 'more than ' . s:arg.presence_count_max . ' time(s)'
+            call argonaut#utils#panic(s:errmsg)
+        endif
+
+        " finally, remove the dictionary field; it's no longer needed
+        call remove(s:arg, 'presence_count')
+    endfor
+endfunction
+
+" Searches for an argument result that matches with the given argument ID
+" string. A list of result objects is returned.
+"
+" If one is not found, v:null is returned.
+"
+" This should be called after `parser()`.
+function! argonaut#argparser#get_arg(parser, id_str) abort
+    call argonaut#argparser#verify(a:parser)
+    let s:result = []
+    
+    " examine each of the arguments that were parsed
+    for s:argresult in a:parser.args
+        " if this argument has an argument specification, compare against the
+        " provided ID string. If there's a match, add the result's value to
+        " the list
+        let s:arg = s:argresult.arg
+        if s:arg isnot v:null && argonaut#arg#cmp(s:arg, a:id_str) isnot v:null
+            call add(s:result, s:argresult.value)
+        endif
+    endfor
+
+    return s:result
+endfunction
+
+" Convenience function that returns true or false depending on if the argument
+" matching the specific argument identifier was present in the parsed results.
+" This is most useful for arguments that didn't require a value, whose
+" presence indicates something useful to the user.
+"
+" This should be called after `parser()`.
+function! argonaut#argparser#has_arg(parser, id_str) abort
+    return len(argonaut#argparser#get_arg(a:parser, a:id_str)) > 0
+endfunction
+
+" Returns a list of arguments that matched with the parser's argset.
+" Each list entry is a dictionary containing the argument object and the
+" associated value.
+"
+" This should be called after `parser()`.
+function! argonaut#argparser#get_args(parser) abort
+    call argonaut#argparser#verify(a:parser)
+    let s:result = []
+    
+    " examine each of the arguments that were parsed
+    for s:argresult in a:parser.args
+        " if this argument has no argument specification, add it
+        if s:argresult.arg isnot v:null
+            call add(s:result, s:argresult)
+        endif
+    endfor
+
+    return s:result
+endfunction
+
+" Returns a list of arguments that were parsed that did not match any of the
+" specific arguments provided in the parser's argset.
+"
+" This should be called after `parser()`.
+function! argonaut#argparser#get_extra_args(parser) abort
+    call argonaut#argparser#verify(a:parser)
+    let s:result = []
+    
+    " examine each of the arguments that were parsed
+    for s:argresult in a:parser.args
+        " if this argument has no argument specification, add it
+        if s:argresult.arg is v:null
+            call add(s:result, s:argresult.value)
+        endif
+    endfor
+
+    return s:result
+endfunction
+
+
+" ========================= Argument Parsing Results ========================= "
+" An 'argument parsing result' object is used to represent a single argument
+" provided by the user. When the argparser sees this value during its
+" `parse()` function, it is stored internal to the parser.
+
+" Creates a new result object.
+function! s:argparser_result_new(arg, value) abort
+    if a:arg isnot v:null
+        call argonaut#arg#verify(a:arg)
+    endif
+    
+    let s:result = deepcopy(s:argparser_result_template)
+    let s:result.arg = a:arg
+    return s:result
 endfunction
 
 

@@ -16,10 +16,10 @@
 
 " Template object used to create and format all argument identifier objects.
 let s:argid_template = {
-        \ 'name': '',
-        \ 'prefix': '-',
-        \ 'case_sensitive': 1
-    \ }
+    \ 'name': '',
+    \ 'prefix': '-',
+    \ 'case_sensitive': 1
+\ }
 
 
 " ====================== Argument Identifier Interface ======================= "
