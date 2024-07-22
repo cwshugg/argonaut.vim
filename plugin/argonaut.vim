@@ -26,7 +26,16 @@ function! s:create_command_alias(source, alias)
          \ .'? ("'.a:source.'") : ("'.a:alias.'"))'
 endfunction
 
+
+function! s:argonaut_test_completion(arg, line, pos)
+    return ['-h', '--hello', '+gb', '++goodbye']
+endfunction
+
 " DEBUGGING - TODO - REMOVE WHEN DONE DEVELOPING
-command! -nargs=* ArgonautTest call argonaut#commands#test(<f-args>)
+command! 
+    \ -nargs=*
+    \ -complete=customlist,s:argonaut_test_completion
+    \ ArgonautTest
+    \ call argonaut#commands#test(<f-args>)
 call s:create_command_alias('ArgonautTest', 'ArgTest')
 

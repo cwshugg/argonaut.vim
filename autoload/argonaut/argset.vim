@@ -70,3 +70,20 @@ function! argonaut#argset#cmp(set, str) abort
     return v:null
 endfunction
 
+" A helper function that can be employed to provide custom vim command
+" completion. It utilizies the provided argset's argument identifiers to
+" return a list of all valid command identifiers.
+function! argonaut#argset#get_all_identifiers(set) abort
+    let s:options = []
+
+    " iterate through all arguments in the set
+    for s:arg in a:set.arguments
+        " iterate through all argument identifiers in the argument
+        for s:argid in s:arg.identifiers
+            call add(s:options, argonaut#argid#to_string(s:argid))
+        endfor
+    endfor
+
+    return s:options
+endfunction
+

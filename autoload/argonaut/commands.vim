@@ -80,6 +80,8 @@ function! argonaut#commands#test(...) abort
         echo argonaut#argparser#has_arg(s:parser, '--hello')
         echo '! get_arg(??name)'
         echo argonaut#argparser#get_arg(s:parser, '?n')
+
+        echo argonaut#argset#get_all_identifiers(s:set)
     catch
         echoerr 'Caught an error: ' . v:exception
     endtry
