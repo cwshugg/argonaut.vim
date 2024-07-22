@@ -220,11 +220,6 @@ function! argonaut#argparser#parse(parser, str) abort
         " with any of the argument specifications within
         let s:match = argonaut#argset#cmp(a:parser.argset, s:splitbit.text)
 
-        " FIXME - DEBUGGING ------------------------------------------------- "
-        echo 'Does "' . s:splitbit.text . '" match any identifiers?'
-        echo s:match is v:null ? 'NO' : s:match
-        " FIXME - DEBUGGING ------------------------------------------------- "
-
         " create an argument parser result object and store it
         let s:new_result = s:argparser_result_new(s:match, v:null)
 
@@ -234,14 +229,8 @@ function! argonaut#argparser#parse(parser, str) abort
             " possibility 1: the last iteration's result was stored, which
             " means the previous argument requires a value. Save this
             " splitbit's value to the previous result
-            echo 'LAST RESULT:'
-            echo s:last_result
             if s:last_result isnot v:null
                 let s:last_result.value = s:splitbit.text
-                " FIXME - DEBUGGING ----------------------------------------- "
-                echo 'VALUE FOR PREVIOUS ARG:'
-                echo s:last_result
-                " FIXME - DEBUGGING ----------------------------------------- "
                 let s:last_result = v:null
                 continue
             endif
@@ -251,10 +240,6 @@ function! argonaut#argparser#parse(parser, str) abort
             " result to hold the splitbit's value and add it to the parser
             let s:new_result.value = s:splitbit.text
             call add(a:parser.args, s:new_result)
-            " FIXME - DEBUGGING --------------------------------------------- "
-            echo 'UNNAMED ARG:'
-            echo s:new_result
-            " FIXME - DEBUGGING --------------------------------------------- "
             continue
         endif
 
@@ -433,9 +418,18 @@ endfunction
 "
 " Any postprocessing that is done may modify the text of the splitbit.
 function! s:splitbit_postprocess(splitbit) abort
-    " if there is no nesting pair, then there's no post-processing to do
+    " if there's no nesting pair...
     let s:np = a:splitbit.nesting_pair
     if s:np is v:null
+        " does the text begin with '$'? It may be an environment variable that
+        " was specified without the '{}' brackets
+        let s:text = trim(a:splitbit.text)
+        if argonaut#utils#str_begins_with(s:text, '$')
+            let s:envvar_str = strpart(s:text, 1, len(s:text) - 1)
+            let s:envvar = argonaut#utils#get_env(s:envvar_str)
+            let a:splitbit.text = s:envvar is v:null ? '' : s:envvar
+        endif
+
         return
     endif
 

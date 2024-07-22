@@ -50,6 +50,20 @@ function! argonaut#utils#str_cmp_case_insensitive(str1, str2) abort
     return a:str1 is? a:str2
 endfunction
 
+" Returns true if the string begins with the given prefix.
+function! argonaut#utils#str_begins_with(str, prefix) abort
+    let s:cmp_len = len(a:prefix)
+    let s:cmp_str = strpart(a:str, 0, s:cmp_len)
+    return argonaut#utils#str_cmp(s:cmp_str, a:prefix)
+endfunction
+
+" Returns true if the string begins with the given prefix.
+function! argonaut#utils#str_begins_with_case_insensitive(str, prefix) abort
+    let s:cmp_len = len(a:prefix)
+    let s:cmp_str = strpart(a:str, 0, s:cmp_len)
+    return argonaut#utils#str_cmp_case_insensitive(s:cmp_str, a:prefix)
+endfunction
+
 " Examines a single character and returns true if it's whitespace.
 function! argonaut#utils#char_is_whitespace(char) abort
     return match(a:char, '\s\|\n\|\t\|\r') == 0
