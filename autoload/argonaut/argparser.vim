@@ -63,7 +63,7 @@ endfunction
 " strings surrounded by quotes.
 function! argonaut#argparser#split(parser, str) abort
     let s:current_np = v:null
-    let s:current_arg_start = -1
+    let s:current_arg = v:null
     let s:args = []
     
     " walk through the string, character by character
@@ -78,10 +78,6 @@ function! argonaut#argparser#split(parser, str) abort
         endif
         let s:cease_arg_tracking = 0
 
-        " determine if the previous character was a backslash (this may affect
-        " nesting pair parsing)
-        let s:previous_backslash = s:idx > 0 && a:str[s:idx - 1] == '\'
-    
         " if we're currently not tracking a nesting pair...
         if s:current_np is v:null
             " iterate through the nesting pairs and compare the opener
@@ -101,10 +97,16 @@ function! argonaut#argparser#split(parser, str) abort
                     " `s:current_np` to track the new nesting pair, and start
                     " a new argument
                     let s:current_np = s:np
-                    let s:current_arg_start = s:idx + 1
+                    let s:current_arg = ''
                     break
                 endif
             endfor
+
+            " if the above loop succeeded in finding a nesting pair, proceed
+            " to the next iteration of the main loop
+            if s:current_np isnot v:null
+                continue
+            endif
             
             " additionally, if we're currently examining whitespace, we need to
             " end the current argument
@@ -133,26 +135,31 @@ function! argonaut#argparser#split(parser, str) abort
         " if we've been told to finish the current argument, and we are in
         " fact tracking an argument, we'll save it to our result list
         if s:cease_arg_tracking
-            if s:current_arg_start >= 0
-                " extract the substring from the starting index
-                let s:current_arg_len = s:idx - s:current_arg_start
-                let s:current_arg = strpart(a:str,
-                                          \ s:current_arg_start,
-                                          \ s:current_arg_len)
-    
-                " add to the argument list and reset the starting index
+            if s:current_arg isnot v:null
                 call add(s:args, s:current_arg)
-                let s:current_arg_start = -1
+                let s:current_arg = v:null
             endif
         " otherwise, start a new argument if we currently don't have one
-        elseif s:current_arg_start < 0
-            let s:current_arg_start = s:idx
+        elseif s:current_arg is v:null
+            let s:current_arg = ''
+        endif
+
+        " finally, add the next character to our current argument string, as
+        " long as we're not in the final (extra) iteration
+        let s:previous_backslash = s:char == '\'
+        if s:current_arg isnot v:null && s:idx < s:str_len
+            let s:char = a:str[s:idx]
+            " if we're looking at a backslash, we want to skip the backslash,
+            " but remember that the next character is escaped
+            if !s:previous_backslash
+                let s:current_arg .= s:char
+            endif
         endif
     endfor
     
     " at this point, we shouldn't have an unfinished argument, due to our
     " extra iteration in the above loop
-    if s:current_arg_start >= 0
+    if s:current_arg isnot v:null
         let s:errmsg = 'the provided string was not properly terminated: ' .
                      \ '"' . a:str . '"'
         call argonaut#utils#panic(s:errmsg)
@@ -166,7 +173,9 @@ endfunction
 function! argonaut#argparser#parse(parser, str) abort
     " first, split the string into pieces
     let s:pieces = argonaut#argparser#split(a:parser, a:str)
-
+    
+    echo 'ARGUMENTS:'
+    echo s:pieces
     " TODO - implement the rest
 endfunction
 
