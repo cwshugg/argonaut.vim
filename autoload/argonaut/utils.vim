@@ -83,3 +83,45 @@ function! argonaut#utils#run_shell_command(text) abort
     return s:result
 endfunction
 
+
+" ============================== File Utilities ============================== "
+" Returns the dirname of the given path.
+function! argonaut#utils#get_dirname(path) abort
+    return fnamemodify(a:path, ':h')
+endfunction
+
+" Returns the basename of the given path.
+function! argonaut#utils#get_basename(path) abort
+    return fnamemodify(a:path, ':t')
+endfunction
+
+" Returns true if the given path string points to a valid file.
+function! argonaut#utils#is_file(path) abort
+    return filereadable(a:path)
+endfunction
+
+" Returns true if the given path string points to a valid directory
+function! argonaut#utils#is_dir(path) abort
+    return isdirectory(a:path)
+endfunction
+
+" Returns a list of all files and directories in the given directory.
+function! argonaut#utils#list_dir(path) abort
+    " make sure the given path is valid
+    if !argonaut#utils#is_dir(a:path)
+        let s:errmsg = 'the given directory path (' . a:path .
+                     \ ') does not point to a valid directory'
+        call argonaut#utils#panic(s:errmsg)
+    endif
+
+    let s:result = []
+    for s:file in split(globpath(a:path, '*'), "\n")
+        " if the file is a valid file or directory, add it
+        if argonaut#utils#is_file(s:file) || argonaut#utils#is_dir(s:file)
+            call add(s:result, s:file)
+        endif
+    endfor
+
+    return s:result
+endfunction
+

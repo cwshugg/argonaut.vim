@@ -13,9 +13,21 @@ let s:argset_template = {
 
 " ============================ Argument Set Index ============================ "
 " Creates a new argument set object.
-function! argonaut#argset#new() abort
-    " make a copy of the template object
-    return deepcopy(s:argset_template)
+function! argonaut#argset#new(...) abort
+    let s:result = deepcopy(s:argset_template)
+
+    " argument 1 (if provided) represents the argument list
+    if a:0 > 0
+        let s:result.arguments = a:1
+    endif
+
+    " make sure too many arguments weren't provided
+    if a:0 > 1
+        let s:errmsg = 'argonaut#argset#new() accepts no more than 1 argument'
+        call argonaut#utils#panic(s:errmsg)
+    endif
+
+    return s:result
 endfunction
 
 " Checks the given object for all fields in the argument set template. An
@@ -70,20 +82,20 @@ function! argonaut#argset#cmp(set, str) abort
     return v:null
 endfunction
 
-" A helper function that can be employed to provide custom vim command
-" completion. It utilizies the provided argset's argument identifiers to
-" return a list of all valid command identifiers.
-function! argonaut#argset#get_all_identifiers(set) abort
-    let s:options = []
+" Returns a list of all argid objects stored within the argset. This is handy
+" for implementing command completion on the argset's specific set of
+" commands.
+function! argonaut#argset#get_all_argids(set) abort
+    let s:argids = []
 
     " iterate through all arguments in the set
     for s:arg in a:set.arguments
         " iterate through all argument identifiers in the argument
         for s:argid in s:arg.identifiers
-            call add(s:options, argonaut#argid#to_string(s:argid))
+            call add(s:argids, s:argid)
         endfor
     endfor
 
-    return s:options
+    return s:argids
 endfunction
 

@@ -67,7 +67,7 @@ function! argonaut#commands#test(...) abort
         let s:parser = argonaut#argparser#new()
         call argonaut#argparser#set_argset(s:parser, s:set)
 
-        let s:parse_str = "hello there $--SHELL    ++goodbye \"my name\\\" is 'connor' \"     testing --hello $( ls -al) ${HOME} ??name ${MYVIMRC} hello ?n connor ?n shugg"
+        let s:parse_str = "hello there $--SHELL    ++goodbye \"my name\\\" is 'connor' \"     testing --hello $( ls -al) ${HOME} ??name $MYVIMRC hello ?n connor ?n shugg ${WASSUP_DUDE}"
         let s:parse_result = argonaut#argparser#parse(s:parser, s:parse_str)
         
         echo '! get_args()'
@@ -81,7 +81,7 @@ function! argonaut#commands#test(...) abort
         echo '! get_arg(??name)'
         echo argonaut#argparser#get_arg(s:parser, '?n')
 
-        echo argonaut#argset#get_all_identifiers(s:set)
+        echo argonaut#argset#get_all_argids(s:set)
     catch
         echoerr 'Caught an error: ' . v:exception
     endtry

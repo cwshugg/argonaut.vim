@@ -24,9 +24,31 @@ let s:argid_template = {
 
 " ====================== Argument Identifier Interface ======================= "
 " Creates a new argument ID object.
-function! argonaut#argid#new() abort
-    " make a copy of the template object
-    return deepcopy(s:argid_template)
+function! argonaut#argid#new(...) abort
+    let s:result = deepcopy(s:argid_template)
+
+    " argument 1 (if provided) represents the prefix
+    if a:0 > 0
+        let s:result.prefix = a:1
+    endif
+    
+    " argument 2 (if provided) represents the name
+    if a:0 > 1
+        let s:result.name = a:2
+    endif
+    
+    " argument 3 (if provided) represents the case sensitivity
+    if a:0 > 2
+        let s:result.case_sensitive = argonaut#utils#sanitize_bool(a:3)
+    endif
+
+    " make sure too many arguments weren't provided
+    if a:0 > 3
+        let s:errmsg = 'argonaut#argid#new() accepts no more than 3 arguments'
+        call argonaut#utils#panic(s:errmsg)
+    endif
+
+    return s:result
 endfunction
 
 " Checks the given object for all fields in the argument identifier template.

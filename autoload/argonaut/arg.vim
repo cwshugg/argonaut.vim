@@ -28,9 +28,36 @@ let s:arg_template = {
 
 " ======================== Argument Object Interface ========================= "
 " Creates a new argument object.
-function! argonaut#arg#new() abort
-    " make a copy of the template object
-    return deepcopy(s:arg_template)
+function! argonaut#arg#new(...) abort
+    let s:result = deepcopy(s:arg_template)
+
+    " argument 1 (if provided) represents the identifier list
+    if a:0 > 0
+        let s:result.identifiers = a:1
+    endif
+    
+    " argument 2 (if provided) represents the presence count minimum
+    if a:0 > 1
+        let s:result.presence_count_min = a:2
+    endif
+    
+    " argument 3 (if provided) represents the presence count maximum
+    if a:0 > 2
+        let s:result.presence_count_max = a:3
+    endif
+
+    " argument 4 (if provided) represents whether or not a value is required
+    if a:0 > 2
+        let s:result.value_required = a:4
+    endif
+
+    " make sure too many arguments weren't provided
+    if a:0 > 4
+        let s:errmsg = 'argonaut#arg#new() accepts no more than 4 arguments'
+        call argonaut#utils#panic(s:errmsg)
+    endif
+
+    return s:result
 endfunction
 
 " Checks the given object for all fields in the argument template. An error is
