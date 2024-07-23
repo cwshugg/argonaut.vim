@@ -43,17 +43,6 @@ call argonaut#arg#set_presence_count_max(s:command_arg, 1)
 call argonaut#arg#set_value_required(s:command_arg, 0)
 call add(s:command_args, s:command_arg)
 
-
-let s:command_arg = argonaut#arg#new([
-        \ argonaut#argid#new('-', 'n'),
-        \ argonaut#argid#new('--', 'name')
-    \ ],
-    \ 'Accepts your name as input.',
-    \ 0, 2, 1, 'VALUE'
-\ )
-call add(s:command_args, s:command_arg)
-
-
 " Intialize an argument set. This contains all of the above option
 " definitions.
 let s:command_argset = argonaut#argset#new(s:command_args)
@@ -79,9 +68,7 @@ function! s:argonaut_command(input)
         return
     endif
 
-    echo 'Welcome to Argonaut.'
-    " TODO
-
+    echo 'Argonaut version ' . g:argonaut_version
 endfunction
 
 " Define the comamnd itself. Make sure to use <q-args>; the argparser must
@@ -91,55 +78,4 @@ command!
     \ -complete=customlist,s:argonaut_command_completion
     \ Argonaut
     \ call s:argonaut_command(<q-args>)
-
-
-" DEBUGGING ----------------------------------------------------------------- "
-let s:test_args = []
-let s:test_arg = argonaut#arg#new(
-    \ [
-        \ argonaut#argid#new('-', 'h'),
-        \ argonaut#argid#new('--', 'hello')
-    \ ],
-    \ 1, 1, 0
-\ )
-call add(s:test_args, s:test_arg)
-let s:test_arg = argonaut#arg#new(
-    \ [
-        \ argonaut#argid#new('+', 'g'),
-        \ argonaut#argid#new('++', 'goodbye'),
-        \ argonaut#argid#new('+++', 'GOODBYE', 0)
-    \ ],
-    \ 0, 1, 1
-\ )
-call add(s:test_args, s:test_arg)
-let s:test_argset = argonaut#argset#new(s:test_args)
-let s:test_argparser = argonaut#argparser#new(s:test_argset)
-
-" Creates a safe command alias for commands that begin with ':'.
-"
-" * 'alias' represents the string that will become the new alias.
-" * 'source' represents the existing command you wish to create an alias for.
-"
-" Credit to this StackOverflow post:
-" https://stackoverflow.com/questions/3878692/how-to-create-an-alias-for-a-command-in-vim
-function! s:create_command_alias(source, alias)
-      exec 'cnoreabbrev <expr> '.a:alias
-         \ .' ((getcmdtype() is# ":" && getcmdline() is# "'.a:alias.'")'
-         \ .'? ("'.a:source.'") : ("'.a:alias.'"))'
-endfunction
-
-
-function! s:argonaut_test_completion(arg, line, pos)
-    return argonaut#completion#complete(a:arg, a:line, a:pos, s:test_argset)
-endfunction
-
-" DEBUGGING - TODO - REMOVE WHEN DONE DEVELOPING
-command! 
-    \ -nargs=*
-    \ -complete=customlist,s:argonaut_test_completion
-    \ ArgonautTest
-    \ call argonaut#commands#test(<f-args>)
-call s:create_command_alias('ArgonautTest', 'ArgTest')
-" DEBUGGING ----------------------------------------------------------------- "
-
 
