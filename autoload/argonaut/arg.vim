@@ -6,6 +6,7 @@
 "
 "  * `identifiers` - A list of argument identifier objects, used to recognize
 "    the argument when the user specifies it.
+"  * `description` - A description of the argument and what it represents.
 "  * `presence_count_min` - The minimum number of times this argument must
 "    occur, if it occurs at all. (If this argument is present in the user's
 "    arguments, but the number of times it is present is less than the
@@ -16,13 +17,18 @@
 "    maximum, an error is thrown.)
 "  * `value_required` - A boolean, indicating if this argument *must* be
 "    followed by a value.
+"  * `value_hint` - A string used to briefly describe what the value should be
+"    for this argument. This is used when argonaut displays a help menu, to
+"    help the user understand what value should be provided.
 
 " Template object used to create and format all argument objects.
 let s:arg_template = {
     \ 'identifiers': [],
+    \ 'description': '',
     \ 'presence_count_min': 1,
     \ 'presence_count_max': 1,
-    \ 'value_required': 0
+    \ 'value_required': 0,
+    \ 'value_hint': 'VALUE'
 \ }
 
 
@@ -36,24 +42,36 @@ function! argonaut#arg#new(...) abort
         let s:result.identifiers = a:1
     endif
     
-    " argument 2 (if provided) represents the presence count minimum
+    " argument 2 (if provided) represents the description
     if a:0 > 1
-        let s:result.presence_count_min = a:2
+        let s:result.description = a:2
     endif
     
-    " argument 3 (if provided) represents the presence count maximum
+    " argument 3 (if provided) represents the presence count minimum
     if a:0 > 2
-        let s:result.presence_count_max = a:3
+        let s:result.presence_count_min = a:3
+    endif
+    
+    " argument 4 (if provided) represents the presence count maximum
+    if a:0 > 3
+        let s:result.presence_count_max = a:4
     endif
 
-    " argument 4 (if provided) represents whether or not a value is required
-    if a:0 > 2
-        let s:result.value_required = a:4
+    " argument 5 (if provided) represents whether or not a value is required
+    if a:0 > 4
+        let s:result.value_required = a:5
+    endif
+
+    " argument 6 (if provided) represents the value hint, which is used to
+    " help the user understand what value they should provide for tthis
+    " argument
+    if a:0 > 5
+        let s:result.value_hint = argonaut#utils#sanitize_value(a:6)
     endif
 
     " make sure too many arguments weren't provided
-    if a:0 > 4
-        let s:errmsg = 'argonaut#arg#new() accepts no more than 4 arguments'
+    if a:0 > 6
+        let s:errmsg = 'argonaut#arg#new() accepts no more than 6 arguments'
         call argonaut#utils#panic(s:errmsg)
     endif
 
@@ -107,6 +125,18 @@ function! argonaut#arg#add_argid(arg, aid) abort
     call argonaut#arg#verify(a:arg)
     call argonaut#argid#verify(a:aid)
     call add(a:arg.identifiers, a:aid)
+endfunction
+
+" Setter for `description`.
+function! argonaut#arg#set_description(arg, description) abort
+    call argonaut#arg#verify(a:arg)
+    let a:arg.description = argonaut#utils#sanitize_value(a:description)
+endfunction
+
+" Getter for `description`.
+function! argonaut#arg#get_description(arg) abort
+    call argonaut#arg#verify(a:arg)
+    return get(a:arg, 'description')
 endfunction
 
 " Setter for `presence_count_min`.
@@ -163,6 +193,18 @@ endfunction
 function! argonaut#arg#get_value_required(arg) abort
     call argonaut#arg#verify(a:arg)
     return get(a:arg, 'value_required')
+endfunction
+
+" Setter for `value_hint`.
+function! argonaut#arg#set_value_hint(arg, value_hint) abort
+    call argonaut#arg#verify(a:arg)
+    let a:arg.value_hint = argonaut#utils#sanitize_bool(a:value_hint)
+endfunction
+
+" Getter for `value_hint`.
+function! argonaut#arg#get_value_hint(arg) abort
+    call argonaut#arg#verify(a:arg)
+    return get(a:arg, 'value_hint')
 endfunction
 
 " Compares against all of the argument's identifiers. If one of them matches,

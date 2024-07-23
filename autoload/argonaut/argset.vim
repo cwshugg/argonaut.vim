@@ -86,6 +86,7 @@ endfunction
 " for implementing command completion on the argset's specific set of
 " commands.
 function! argonaut#argset#get_all_argids(set) abort
+    call argonaut#argset#verify(a:set)
     let s:argids = []
 
     " iterate through all arguments in the set
@@ -97,5 +98,85 @@ function! argonaut#argset#get_all_argids(set) abort
     endfor
 
     return s:argids
+endfunction
+
+" A built-in helper menu that shows all arguments stored in the given argset.
+" This is handy for showing a help menu without requiring a user of argonaut
+" to write one themselves.
+function! argonaut#argset#show_help(set) abort
+    call argonaut#argset#verify(a:set)
+
+    " if there are no arguments in the set, quit early
+    if len(a:set.arguments) == 0
+        echo 'There are no specific arguments.'
+        return
+    endif
+
+    echo 'Available arguments:'
+
+    " iterate through each argument
+    for s:arg in a:set.arguments
+        " build a string that shows all possible identifiers for the argument
+        let s:argid_str = ''
+        let s:argids_len = len(s:arg.identifiers)
+        for s:idx in range(s:argids_len)
+            let s:argid = s:arg.identifiers[s:idx]
+            let s:argid_str .= argonaut#argid#to_string(s:argid)
+
+            " if a value is required, show the value hint next to the first
+            " argid
+            if s:arg.value_required && s:idx == 0
+                let s:argid_str .= ' ' . s:arg.value_hint
+            endif
+
+            " add a delimeter if we're not on the last argid
+            if s:idx < s:argids_len - 1
+                let s:argid_str .= ', '
+            endif
+        endfor
+
+        " if the argument must be specified at least once, prefix the argid
+        " string with a special value to indicate this
+        let s:argid_prefix = '    '
+        if s:arg.presence_count_min > 0
+            s:argid_prefix = '  * '
+        endif
+        echo s:argid_prefix . s:argid_str
+        
+        " show the argument's description (if one was provided)
+        let s:description = '(no description)'
+        if !argonaut#utils#is_empty(s:arg.description)
+            let s:description = s:arg.description
+        endif
+        echo '        ' . s:description
+
+        " show the number of times the argument can (or must) be specified
+        let s:presence_count_str = ''
+        if s:arg.presence_count_min > 0
+            " if the presence min and max are both 1, then we'll word things
+            " differently
+            if s:arg.presence_count_min == 1 && s:arg.presence_count_max == 1
+                let s:presence_count_str .= 'This argument must be specified exactly once'
+            " otherwise, make sure to explain both numbers
+            else
+                let s:presence_count_str .= 'This argument must be specified at least ' .
+                                          \ s:arg.presence_count_min . ' times'
+                if s:arg.presence_count_max > 0
+                    let s:presence_count_str .= ', but no more than ' . 
+                                              \ s:arg.presence_count_max . ' times'
+                endif
+            endif
+
+        elseif s:arg.presence_count_max > 1
+            " only show this if the maximum is more than 1. Typically, an
+            " argument can be specified only once, so anything greater
+            " warrants some explanation
+            let s:presence_count_str .= 'This argument may be specified up to ' .
+                                      \ s:arg.presence_count_max . ' times'
+        endif
+        if !argonaut#utils#is_empty(s:presence_count_str)
+            echo '        ' . s:presence_count_str . '.'
+        endif
+    endfor
 endfunction
 

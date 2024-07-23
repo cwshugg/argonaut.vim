@@ -15,8 +15,8 @@ function! argonaut#utils#is_null(value) abort
 endfunction
 
 " Returns true if the given value is considered empty.
-function! argonaut#utils#is_empty(str) abort
-    return len(a:str) == 0
+function! argonaut#utils#is_empty(value) abort
+    return len(a:value) == 0
 endfunction
 
 " Examines the given parameter and returns v:null if it's empty.
@@ -33,9 +33,9 @@ endfunction
 " Treats the given value as a boolean and returns exactly 0 or exactly 1.
 function! argonaut#utils#sanitize_bool(value) abort
     if a:value
-        return 1
+        return v:true
     endif
-    return 0
+    return v:false
 endfunction
 
 
