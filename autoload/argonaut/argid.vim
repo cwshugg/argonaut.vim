@@ -111,6 +111,15 @@ function! argonaut#argid#set_prefix(aid, prefix) abort
         call argonaut#utils#panic(s:errmsg)
     endif
 
+    " make sure the prefix doesn't contain whitespace
+    let s:pieces = split(s:prefix)
+    if len(s:pieces) > 1
+        let s:errmsg = 'an argid (argument identifier) cannot have a name ' .
+                     \ 'containing whitespace ' .
+                     \ '(you provided: "' . s:prefix . '")'
+        call argonaut#utils#panic(s:errmsg)
+    endif
+
     let a:aid.prefix = s:prefix
 endfunction
 

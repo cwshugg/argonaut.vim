@@ -1,0 +1,419 @@
+*argonaut* - A versatile plugin for creating and parsing arguments for Vim commands.
+
+    TODO - argonaut logo in ASCII art
+
+    By Connor Shugg <connor@shugg.dev>~
+
+>
+    If you find this plugin useful, I would greatly appreciate a star on
+    GitHub.  Stars help me understand how much attention this plugin is getting
+    in the Vim community, and thus how much time I should devote to improving
+    it.
+
+    If you find any bugs in the plugin, or want to suggest (or even contribute
+    to) a new feature, please feel free to open an issue on GitHub. Thanks!
+<
+
+
+================================================================================
+CONTENTS                                                     *argonaut-contents*
+
+    INTRODUCTION .............................................. |argonaut-intro|
+    QUICKSTART ........................................... |argonaut-quickstart|
+    ARGUMENTS .................................................. |argonaut-args|
+    ARGUMENT-IDENTIFIERS ..................................... |argonaut-argids|
+    ARGUMENT-SETS ........................................... |argonaut-argsets|
+    ARGUMENT-PARSERS ..................................... |argonaut-argparsers|
+    COMMAND-COMPLETION ................................... |argonaut-completion|
+
+
+================================================================================
+INTRODUCTION                                                    *argonaut-intro*
+
+Argonaut is a plugin that's designed for Vim plugin developers and those that
+like to create their own custom Vim commands. It's not a plugin that provides a
+series of useful commands out-of-the-box; rather, it's a plugin that provides a
+highly configurable interface to create and parse custom sets of command
+arguments. Give yourself and your plugin users a clean way to provide inputs to
+your software, directly from the Vim command line!
+
+If you've used Python's `argparse` library, or LibC's `getopt`, then you're
+familiar with the concept of command-line arguments:
+
+>
+    $ ls -l
+    $ grep --color=auto
+    $ vim -c "echo 'hello'"
+<
+
+In the above example shell commands, `-l`, `--color=auto`, and `-c` are all
+command-line options. These options are named values that indicate some toggle
+switch or value that can be passed into the program being executed. These
+change the program's behavior and give the user a quick way to run different
+routines directly from the command line.
+
+Vim does not traditionally support the creation and parsing of these options.
+So, for plugin writers, reading user input from the Vim command line can be
+tricky. The same granularity we are used to at the shell is not available in
+Vim, which means plugins need to either take in very simple inputs or implement
+parsing code that distracts from the main goal of the plugin and adds bloat.
+
+Argonaut aims to solve this problem. The interface provided in this plugin
+allows advanced plugin writers and simple vimrc-editors alike to create
+commands with rich support for custom options and argument parsing.
+
+
+================================================================================
+QUICKSTART                                                 *argonaut-quickstart*
+
+Follow along to get started with Argonaut quickly. Let's say you are creating a
+Vim command that duplicates a single line of code. What line of code should we
+duplicate? How many times should we duplicate it? Let's use Argonaut to set up
+a few custom command arguments that can be used to specify this information.
+
+We'll begin by creating an argument that will be used to specify the line
+number to duplicate:
+
+>
+    " Create the argument object:
+    let s:arg_line = argonaut#arg#new()
+
+    " Next, create a few identifiers. These specify how the argument is
+    " recognized by the plugin. We've chosen `-l` and `--line`.
+
+    call argonaut#arg#add_argid(s:arg_line, argonaut#argid#new('-', 'l'))
+    call argonaut#arg#add_argid(s:arg_line, argonaut#argid#new('--', 'line'))
+
+    " Set any other parameters, such as the minimum (and maximum) number of times the
+    " argument can be specified, and whether or not a value is expected. Below,
+    " we've said that the argument must be specified *once*, and it cannot be
+    " specified more than once:
+
+    call argonaut#arg#set_value_required(s:arg_line, 1)
+    call argonaut#arg#set_presence_count_min(s:arg_line, 1)
+    call argonaut#arg#set_presence_count_max(s:arg_line, 1)
+
+    " Finally, set the description and a hint for the value, so Argonaut's
+    " built-in help menu can portray the intended use of this argument.
+
+    call argonaut#arg#set_description(s:arg_line,
+        \ 'Sets the line number (in the current file) to duplicate.'
+    \ )
+    call argonaut#arg#set_value_hint(s:arg_line, 'LINE_NUMBER')
+<
+
+We'll next create an argument that will be used to specify the number of times
+the line will be duplicated:
+
+>
+    let s:arg_count = argonaut#arg#new()
+    call argonaut#arg#add_argid(s:arg_count, argonaut#argid#new('-', 'c'))
+    call argonaut#arg#add_argid(s:arg_count, argonaut#argid#new('--', 'count'))
+
+    " This time, we'll say that the argument doesn't *have* to be specified at
+    " all, but it can be specified no more than one time.
+
+    call argonaut#arg#set_value_required(s:arg_count, 1)
+    call argonaut#arg#set_presence_count_min(s:arg_count, 0)
+    call argonaut#arg#set_presence_count_max(s:arg_count, 1)
+
+    call argonaut#arg#set_description(s:arg_count,
+        \ 'Sets the number of times to duplicate the line.'
+    \ )
+    call argonaut#arg#set_value_hint(s:arg_count, 'DUPLICATION_COUNT')
+<
+
+Finally, we'll create an argument that will be used to enable 'verbose' mode,
+so your script can echo out additional information to the user if it's
+specified.
+
+>
+    let s:arg_verbose = argonaut#arg#new()
+
+    " Any prefix can be used for arguments, not just the standard `-` and `--`.
+    " For example, we'll use the plus symbol for this argument, which means the
+    " user would specify it like so: `+v` or `++verbose`.
+
+    call argonaut#arg#add_argid(s:arg_verbose, argonaut#argid#new('+', 'v'))
+    call argonaut#arg#add_argid(s:arg_verbose, argonaut#argid#new('++', 'verbose'))
+
+    " This time, no value is expected alongside the argument, and we'll leave
+    " the 'presence counts' alone, since the default already specifies min=0
+    " and max=1.
+
+    call argonaut#arg#set_value_required(s:arg_verbose, 0)
+
+    call argonaut#arg#set_description(s:arg_verbose,
+        \ 'Enables verbose printing.'
+    \ )
+<
+
+The hard part is over; all the arguments have been created. Next, we'll create
+an argument set to hold these arguments:
+
+>
+    let s:argset = argonaut#argset#new()
+    call argonaut#argset#add_arg(s:argset, s:arg_line)
+    call argonaut#argset#add_arg(s:argset, s:arg_count)
+    call argonaut#argset#add_arg(s:argset, s:arg_verbose)
+<
+
+Then, we'll set up our Vim `command`. This function needs to have access to our
+argument set (`s:argset` in the above code block). We'll also want to make sure
+we specify `<q-args>` rather than `<f-args>`; Argonaut requires that the user's
+input be parsed as one long string.
+
+Inside this function, we'll create an argument parser and give it our argument
+set. With this, we can invoke its parsing function.
+
+>
+    function! s:duplicate_line(input)
+        let s:parser = argonaut#argparser#new(s:argset)
+        call argonaut#argparser#parse(s:parser, a:input)
+
+        " ...
+    endfunction
+
+    command! 
+        \ -nargs=*
+        \ DuplicateLine
+        \ call s:duplicate_line(<q-args>)
+<
+
+After parsing has completed, we can use several functions to retrieve the
+user's parsed inputs:
+
+* `argonaut#argset#has_arg()` - For determining if one of our custom argument
+  was specified.
+* `argonaut#argset#get_arg()` - For retrieving a list of values that was parsed
+  from the argument. (Use this for arguments that expect values.)
+* `argonaut#argset#get_extra_args()` - For retrieving a list of all other
+  values the user specified that did not match one of the custom arguments we
+  specified.
+
+For example, we'll retrieve the values from `--line` and `--count`, while also
+checking for the presence of `++verbose`:
+
+>
+    let s:verbose = argonaut#argparser#has_arg(s:parser, '++verbose')
+
+    let s:line = argonaut#argparser#get_arg(s:parser, '--line')[0]
+
+    let s:count = argonaut#argparser#get_arg(s:parser, '--count')[0]
+<
+
+That's about it! At this point, we would do whatever we please with these
+values to implement our `DuplicateLine` command.
+
+P.S. - want to have Argonaut automatically tab-complete your custom arguments?
+See |argonaut-completion|.
+
+
+================================================================================
+ARGUMENTS                                                        *argonaut-args*
+
+In Argonaut, an 'argument' represents a single custom specification of a
+command-line option. An Argument has the following functions, which allow you
+to fully configure each one you create:
+
+`argonaut#arg#new()`
+
+A constructor that returns a new argument object.
+
+`argonaut#arg#to_string(arg)`
+
+Returns a string representation of the argument. (Useful for debugging)
+
+`argonaut#arg#add_argid(arg, argid)`
+
+Adds an argument identifier ('argid') to the argument's list of identifiers.
+For more information on these objects, see |argonaut-argids|.
+
+`argonaut#arg#set_description(arg, description)`
+`argonaut#arg#get_description(arg)`
+
+This sets/gets the argument's description, which is a short explanation of what
+this argument represents, and how it is used by your script.
+
+`argonaut#arg#set_presence_count_min(arg, presence_count_min)`
+`argonaut#arg#get_presence_count_min(arg)`
+
+This sets/gets the argument's minimum presence count. This represents the
+number of times the argument must be specified when your script/command is run.
+
+ * A value of `0` indicates that the argument does not have to be specified;
+   it is optional.
+ * A value of `1` indicates that the argument must be specified at least once.
+ * A value of `2` indicates that the argument must be specified at least twice.
+
+`argonaut#arg#set_presence_count_max(arg, presence_count_max)`
+`argonaut#arg#get_presence_count_max(arg)`
+
+This sets/gets the argument's maximum presence count. This represents the
+maximum number of times the argument is allowed to be specified by the user.
+
+ * A value of `0` indicates that the argument has no maximum; it can be
+   specified as many times as the user would like.
+ * A value of `1` indicates that the argument cannot be specified more than once.
+ * A value of `2` indicates that the argument cannot be specified more than
+   twice.
+
+`argonaut#arg#set_value_required(arg, value_required)`
+`argonaut#arg#get_value_required(arg)`
+
+This sets/gets a boolean flag that dictates if the argument expects a value to
+be provided after it in the user's command-line arguments.
+
+`argonaut#arg#set_value_hint(arg, valut_hint)`
+`argonaut#arg#get_value_hint(arg)`
+
+This takes in a string, which represents a hint value to be used in Argonaut's
+built-in help menu function, `argonaut#argset#show_help()`. Use this to
+communicate to the user what they should specify for this argument's value.
+
+
+================================================================================
+ARGUMENT-IDENTIFIERS                                           *argonaut-argids*
+
+Argument Identifiers, also called 'argids', represent individual strings that
+Argonaut can use to recognize specific arguments during parsing. They are made
+up of a `prefix` and a `name`.
+
+For example, in the argument `--line` from the |argonaut-quickstart|, the
+prefix would be `--` and the name would be `line`.
+
+Argument identifier objects have the following functions available:
+
+`argonaut#argid#new()`
+
+Constructs and returns a new argid.
+
+`argonaut#argid#to_string(argid)`
+
+This returns the string representation of the argid, formatted how it would be
+written by a user.
+
+`argonaut#argid#set_name(argid, name)`
+`argonaut#argid#get_name(argid)`
+
+This sets/gets the argid's name value. The name cannot contain whitespace.
+
+`argonaut#argid#set_prefix(argid, prefix)`
+`argonaut#argid#get_prefix(argid)`
+
+This sets/gets the argid's prefix value. The prefix cannot contain whitespace.
+
+`argonaut#argid#set_case_sensitive(argid, case_sensitive)`
+`argonaut#argid#get_base_sensitive(argid)`
+
+This sets/gets a boolean flag that indicates if parsing can match user input to
+this identifier regardless of letter case. If it's true, the match is case
+sensitive.
+
+
+================================================================================
+ARGUMENT-SETS                                                 *argonaut-argsets*
+
+An argument set ('argset') is a grouping of arguments. Argument sets are used
+by the argument parser to search the user's input for strings that match the
+argument identifiers defined within the arguments inside an argset.
+
+The following functions are available for argsets:
+
+`argonaut#argset#new()`
+
+Constructs and returns a new argset.
+
+`argonaut#argset#to_string(argset)`
+
+Returns a string representation of the argset and all of its contained
+arguments. This may be useful for debugging.
+
+`argonaut#argset#add_arg(argset, arg)`
+
+This adds an argument to the set.
+
+`argonaut#argset#get_all_argids(argset)`
+
+This returns a list of argid objects (represented by dictionaries), from all of
+the arguments stored inside the argset. This may be useful if you want to
+implement custom tab completion logic for Argonaut that exceeds the built-in
+tab-completion.
+
+`argonaut#argset#show_help(argset)`
+
+This function displays a help menu, similar to the ones seen in Linux man pages
+or typical outputs from specifying `--help` in many command-line tools. This
+uses the arguments stored within the argset to generate a help menu with your
+custom arguments, their descriptions, their value hints, etc.
+
+
+================================================================================
+ARGUMENT-PARSERS                                           *argonaut-argparsers*
+
+The argument parser ('argparser') performs the actual parsing logic in
+Argonaut. It accepts an argset as input and uses it to search provided strings
+for matching arguments.
+
+The following functions are available:
+
+`argonaut#argparser#new()`
+
+Constructs and returns a new argparser.
+
+`argonaut#argparser#set_argset(argparser)`
+`argonaut#argparser#get_argset(argparser)`
+
+This sets/gets the argparser's argset. The argset is used during parsing, as
+described above.
+
+`argonaut#argparser#parse(argparser, str)`
+
+This is the main parsing function. Invoke this to have the argparser process
+the provided raw string (`str`). After parsing has finished, the following
+functions can be used to query the results:
+
+`argonaut#argparser#has_arg(argparser, argid_str)`
+
+Takes in an argument identifier string and returns true if the argument was
+parsed at least once during parsing.
+
+`argonaut#argparser#get_arg(argparser, argid_str)`
+
+Returns a list of values for the specified argument identifier string. If the
+argument wasn't found during parsing, the list will be empty. This function is
+most useful for arguments that expect a value (i.e. whose `value_required`
+field is set to true).
+
+`argonaut#argparser#get_extra_args(argparser)`
+
+This returns a list of values that were extracted during parsing, but did not
+match with any of the arguments defined in the argset.
+
+
+================================================================================
+COMMAND-COMPLETION                                         *argonaut-completion*
+
+Argonaut provides a built-in function for tab-completing the arguments you
+specify in an argument set. You can take advantage of this by specifying the
+`customlist` value for the `-complete` argument when declaring your command.
+
+Create a completion function and invoke `argonaut#completion#complete()` inside
+it, passing in the argument containing the command's arguments:
+
+>
+    let s:argset = argonaut#argset#new()
+
+    " ...
+
+    function! s:duplicate_line_completion(arg, line, pos)
+        return argonaut#completion#complete(a:arg, a:line, a:pos, s:argset)
+    endfunction
+
+    command! 
+        \ -nargs=*
+        \ -complete=customlist,s:duplicate_line_completion
+        \ DuplicateLine
+        \ call s:duplicate_line(<q-args>)
+<
+

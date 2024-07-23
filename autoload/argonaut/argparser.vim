@@ -341,6 +341,7 @@ endfunction
 "
 " This should be called after `parser()`.
 function! argonaut#argparser#has_arg(parser, id_str) abort
+    call argonaut#argparser#verify(a:parser)
     return len(argonaut#argparser#get_arg(a:parser, a:id_str)) > 0
 endfunction
 

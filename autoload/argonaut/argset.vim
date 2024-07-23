@@ -144,11 +144,9 @@ function! argonaut#argset#show_help(set) abort
         echo s:argid_prefix . s:argid_str
         
         " show the argument's description (if one was provided)
-        let s:description = '(no description)'
         if !argonaut#utils#is_empty(s:arg.description)
-            let s:description = s:arg.description
+            echo '        ' . s:arg.description
         endif
-        echo '        ' . s:description
 
         " show the number of times the argument can (or must) be specified
         let s:presence_count_str = ''

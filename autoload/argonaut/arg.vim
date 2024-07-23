@@ -25,7 +25,7 @@
 let s:arg_template = {
     \ 'identifiers': [],
     \ 'description': '',
-    \ 'presence_count_min': 1,
+    \ 'presence_count_min': 0,
     \ 'presence_count_max': 1,
     \ 'value_required': 0,
     \ 'value_hint': 'VALUE'
