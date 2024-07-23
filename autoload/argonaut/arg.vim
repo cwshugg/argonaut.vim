@@ -44,7 +44,7 @@ function! argonaut#arg#new(...) abort
     
     " argument 2 (if provided) represents the description
     if a:0 > 1
-        let s:result.description = a:2
+        let s:result.description = argonaut#utils#sanitize_value(a:2)
     endif
     
     " argument 3 (if provided) represents the presence count minimum
@@ -59,7 +59,7 @@ function! argonaut#arg#new(...) abort
 
     " argument 5 (if provided) represents whether or not a value is required
     if a:0 > 4
-        let s:result.value_required = a:5
+        let s:result.value_required = argonaut#utils#sanitize_bool(a:5)
     endif
 
     " argument 6 (if provided) represents the value hint, which is used to

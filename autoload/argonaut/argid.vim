@@ -29,12 +29,12 @@ function! argonaut#argid#new(...) abort
 
     " argument 1 (if provided) represents the prefix
     if a:0 > 0
-        let s:result.prefix = a:1
+        let s:result.prefix = argonaut#utils#sanitize_value(a:1)
     endif
     
     " argument 2 (if provided) represents the name
     if a:0 > 1
-        let s:result.name = a:2
+        let s:result.name = argonaut#utils#sanitize_value(a:2)
     endif
     
     " argument 3 (if provided) represents the case sensitivity
