@@ -1,6 +1,23 @@
-*argonaut* - A versatile plugin for creating and parsing arguments for Vim commands.
+*argonaut* *argonaut.txt* *Argonaut*
 
-    TODO - argonaut logo in ASCII art
+                /\
+               :  :
+         ______:  :______
+       .'      :  :      '.
+      /        '__'        \
+     |                      |   A versatile plugin for creating and parsing
+     |       Argonaut       |   custom argument for Vim commands.
+     |                      |
+     |   ______    ______   |   Providing you with:
+     |  |      \  /      |  |   
+     |   \     |  |     /   |    * Easy configuration to add arguments to your
+    |     \    |  |    /     |     Vim script/plugin commands.
+    |      \   \__/   /      |   * Bash-like command-line argument parsing.
+    |       |        |       |   * Rich tab completion support.
+     \      |        |      /
+      \     |        |     /
+       \    |        |    /
+        \__/          \__/
 
     By Connor Shugg <connor@shugg.dev>~
 
@@ -422,4 +439,28 @@ following order):
 1. Your argset's argument identifiers.
 2. Environment variables (strings that begin with `$` or `${`).
 3. File and directory paths (also including environment variables).
+
+If you would instead prefer to only use part of Argonaut's built-in tab
+completion, or implement custom logic around it, you can instead invoke the
+following functions:
+
+`argonaut#completion#complete_argids(arglead, cmdline, cursorpos, argset)`
+
+This takes in the standard three arguments for a Vim command completion
+function, along with your custom argument set (`argset`). This function will
+search for any current matches to argument identifiers and return a list of
+appropriate strings.
+
+`argonaut#completion#complete_files(arglead, cmdline, cursorpos)`
+
+This attempts to match the current input with paths to valid files and
+directories on the filesystem, in the way you're already used to in Vim. It
+returns a list of matching file/directory paths.
+
+`argonaut#completion#complete_envvars(arglead, cmdline, cursorpos)`
+
+This attempts to match the current input up with environment variables defined
+in your system, so long as the current input begins with `$` or `${`. A list of
+matching environment variable names (including the `$` or `${}` formatting) is
+returned.
 

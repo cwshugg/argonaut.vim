@@ -12,10 +12,9 @@ if exists('g:argonaut_initialized')
     finish
 endif
 let g:argonaut_initialized = 1
+let s:argonaut_description = 'The Customizable Vim Command Argument System'
 let g:argonaut_version = '0.0.1'
-
-" Global settings
-" TODO
+let s:argonaut_author = 'cwshugg'
 
 
 " =========================== Introductory Command =========================== "
@@ -62,13 +61,18 @@ function! s:argonaut_command(input)
     let s:parser = argonaut#argparser#new(s:command_argset)
     call argonaut#argparser#parse(s:parser, a:input)
 
+    echo 'Argonaut: ' . s:argonaut_description
+
     " if the help argument was provided by the user, show a help menu
     if argonaut#argparser#has_arg(s:parser, '-h')
         call argonaut#argset#show_help(s:command_argset)
         return
     endif
 
-    echo 'Argonaut version ' . g:argonaut_version
+    echo 'Author:   ' . s:argonaut_author
+    echo 'Version:  ' . g:argonaut_version
+    echo "\n"
+    echo 'To get started, run `:h argonaut`'
 endfunction
 
 " Define the comamnd itself. Make sure to use <q-args>; the argparser must
