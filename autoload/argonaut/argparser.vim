@@ -45,32 +45,32 @@ let s:argparser_nesting_pairs = [
 " ======================== Argument Object Interface ========================= "
 " Creates a new parser object.
 function! argonaut#argparser#new(...) abort
-    let s:result = deepcopy(s:argparser_template)
+    let l:result = deepcopy(s:argparser_template)
 
     " if at least one argument was provided, we'll use this as the argset
     if a:0 > 0
-        let s:argset = a:1
-        call argonaut#argset#verify(s:argset)
-        let s:result.argset = s:argset
+        let l:argset = a:1
+        call argonaut#argset#verify(l:argset)
+        let l:result.argset = l:argset
     endif
 
     " make sure too many arguments weren't provided
     if a:0 > 1
-        let s:errmsg = 'argonaut#argparser#new() accepts no more than 1 argument'
-        call argonaut#utils#panic(s:errmsg)
+        let l:errmsg = 'argonaut#argparser#new() accepts no more than 1 argument'
+        call argonaut#utils#panic(l:errmsg)
     endif
 
-    return s:result
+    return l:result
 endfunction
 
 " Checks the given object for all fields in the parser template. An error is
 " thrown if they are all not found.
 function! argonaut#argparser#verify(parser) abort
-    for s:key in keys(s:argparser_template)
-        if !has_key(a:parser, s:key)
-            let s:errmsg = 'the provided object does not appear to be a valid ' .
+    for l:key in keys(s:argparser_template)
+        if !has_key(a:parser, l:key)
+            let l:errmsg = 'the provided object does not appear to be a valid ' .
                          \ 'argparser object'
-            call argonaut#utils#panic(s:errmsg)
+            call argonaut#utils#panic(l:errmsg)
         endif
     endfor
 endfunction
@@ -91,44 +91,44 @@ endfunction
 " Attempts to split a given string by whitespace, while also factoring in
 " strings surrounded by quotes. Returns a list of splitbit objects.
 function! argonaut#argparser#split(parser, str) abort
-    let s:current_np = v:null
-    let s:current_arg = v:null
-    let s:args = []
+    let l:current_np = v:null
+    let l:current_arg = v:null
+    let l:args = []
     
     " walk through the string, character by character
-    let s:str_len = len(a:str)
-    let s:previous_backslash = 0
-    let s:idx = 0
-    while s:idx <= s:str_len
+    let l:str_len = len(a:str)
+    let l:previous_backslash = 0
+    let l:idx = 0
+    while l:idx <= l:str_len
         " to make the below logic simpler, this loop is doing one extra
         " iteration. On the final iteration, the 'current character' will be a
         " whitespace
-        let s:char = ' '
-        if s:idx < s:str_len
-            let s:char = a:str[s:idx]
+        let l:char = ' '
+        if l:idx < l:str_len
+            let l:char = a:str[l:idx]
         endif
-        let s:cease_arg_tracking = 0
+        let l:cease_arg_tracking = 0
 
         " if we're currently not tracking a nesting pair...
-        if argonaut#utils#is_null(s:current_np)
+        if argonaut#utils#is_null(l:current_np)
             " iterate through the nesting pairs and compare the opener
             " string with the current string
-            for s:np in s:argparser_nesting_pairs
+            for l:np in s:argparser_nesting_pairs
                 " make sure we have enough room left in the string to compare with
-                let s:np_opener = s:np.opener
-                let s:np_cmp_len = len(s:np_opener)
-                if s:np_cmp_len > s:str_len - s:idx
+                let l:np_opener = l:np.opener
+                let l:np_cmp_len = len(l:np_opener)
+                if l:np_cmp_len > l:str_len - l:idx
                     continue
                 endif
                 
-                let s:np_cmp_str = strpart(a:str, s:idx, s:np_cmp_len)
-                if argonaut#utils#str_cmp(s:np_opener, s:np_cmp_str) &&
-                 \ !s:previous_backslash
+                let l:np_cmp_str = strpart(a:str, l:idx, l:np_cmp_len)
+                if argonaut#utils#str_cmp(l:np_opener, l:np_cmp_str) &&
+                 \ !l:previous_backslash
                     " if the current nesting pair matches, update
-                    " `s:current_np` to track the new nesting pair, and start
+                    " `l:current_np` to track the new nesting pair, and start
                     " a new argument
-                    let s:current_np = s:np
-                    let s:current_arg = s:splitbit_new(s:current_np)
+                    let l:current_np = l:np
+                    let l:current_arg = s:splitbit_new(l:current_np)
                     break
                 endif
             endfor
@@ -137,72 +137,72 @@ function! argonaut#argparser#split(parser, str) abort
             " to the next iteration of the main loop. Adjust our loop index
             " such that the next character we land on is the first one that
             " occurs after the nesting pair's opener string
-            if !argonaut#utils#is_null(s:current_np)
-                let s:idx += len(s:current_np.opener)
+            if !argonaut#utils#is_null(l:current_np)
+                let l:idx += len(l:current_np.opener)
                 continue
             endif
             
             " additionally, if we're currently examining whitespace, we need to
             " end the current argument
-            let s:is_whitespace = argonaut#utils#char_is_whitespace(s:char)
-            if s:is_whitespace
-                let s:cease_arg_tracking = 1
+            let l:is_whitespace = argonaut#utils#char_is_whitespace(l:char)
+            if l:is_whitespace
+                let l:cease_arg_tracking = 1
             endif
         " otherwise, if we currently ARE tracking a nesting pair...
         else
             " make sure we have enough room left in the string to compare with
-            let s:np_closer = s:current_np.closer
-            let s:np_cmp_len = len(s:np_closer)
-            if s:np_cmp_len <= s:str_len - s:idx
+            let l:np_closer = l:current_np.closer
+            let l:np_cmp_len = len(l:np_closer)
+            if l:np_cmp_len <= l:str_len - l:idx
                 " if the current string matches with the nesting pair's closer, we
                 " need to end the current argument
-                let s:np_cmp_str = strpart(a:str, s:idx, s:np_cmp_len)
-                if argonaut#utils#str_cmp(s:np_closer, s:np_cmp_str) &&
-                 \ !s:previous_backslash
+                let l:np_cmp_str = strpart(a:str, l:idx, l:np_cmp_len)
+                if argonaut#utils#str_cmp(l:np_closer, l:np_cmp_str) &&
+                 \ !l:previous_backslash
                     " if the current nesting pair matches, update
-                    let s:cease_arg_tracking = 1
-                    let s:current_np = v:null
+                    let l:cease_arg_tracking = 1
+                    let l:current_np = v:null
                 endif
             endif
         endif
         
         " if we've been told to finish the current argument, and we are in
         " fact tracking an argument, we'll save it to our result list
-        if s:cease_arg_tracking
-            if !argonaut#utils#is_null(s:current_arg)
-                call add(s:args, s:current_arg)
-                let s:current_arg = v:null
+        if l:cease_arg_tracking
+            if !argonaut#utils#is_null(l:current_arg)
+                call add(l:args, l:current_arg)
+                let l:current_arg = v:null
             endif
         " otherwise, start a new argument if we currently don't have one
-        elseif argonaut#utils#is_null(s:current_arg)
-            let s:current_arg = s:splitbit_new(v:null)
+        elseif argonaut#utils#is_null(l:current_arg)
+            let l:current_arg = s:splitbit_new(v:null)
         endif
 
         " finally, add the next character to our current argument string, as
         " long as we're not in the final (extra) iteration
-        let s:previous_backslash = s:char == '\'
-        if !argonaut#utils#is_null(s:current_arg) && s:idx < s:str_len
-            let s:char = a:str[s:idx]
+        let l:previous_backslash = l:char == '\'
+        if !argonaut#utils#is_null(l:current_arg) && l:idx < l:str_len
+            let l:char = a:str[l:idx]
             " if we're looking at a backslash, we want to skip the backslash,
             " but remember that the next character is escaped
-            if !s:previous_backslash
-                call s:splitbit_add_text(s:current_arg, s:char)
+            if !l:previous_backslash
+                call s:splitbit_add_text(l:current_arg, l:char)
             endif
         endif
         
         " move to the next character
-        let s:idx += 1
+        let l:idx += 1
     endwhile
     
     " at this point, we shouldn't have an unfinished argument, due to our
     " extra iteration in the above loop
-    if !argonaut#utils#is_null(s:current_arg)
-        let s:errmsg = 'the provided string was not properly terminated: ' .
+    if !argonaut#utils#is_null(l:current_arg)
+        let l:errmsg = 'the provided string was not properly terminated: ' .
                      \ '"' . a:str . '"'
-        call argonaut#utils#panic(s:errmsg)
+        call argonaut#utils#panic(l:errmsg)
     endif
 
-    return s:args
+    return l:args
 endfunction
 
 " The main parser function. Takes in the parser and a string to parse.
@@ -215,97 +215,96 @@ function! argonaut#argparser#parse(parser, str) abort
     " dictionary fields within each of the argument specification objects in
     " the parser's argument set. These will be used to count the number of
     " occurrences we find below
-    for s:arg in a:parser.argset.arguments
-        let s:arg.presence_count = 0
+    for l:arg in a:parser.argset.arguments
+        let l:arg.presence_count = 0
     endfor
 
     " first, split the string into pieces
-    let s:splitbits = argonaut#argparser#split(a:parser, a:str)
+    let l:splitbits = argonaut#argparser#split(a:parser, a:str)
     
-    " after receiving the splitbits, postprocess each. (this'll retrieve
-    " environment variables, run shell commands, etc.)
-    let s:splitbits_len = len(s:splitbits)
-    let s:last_result = v:null
-    for s:idx in range(s:splitbits_len)
-        let s:splitbit = s:splitbits[s:idx]
-        call s:splitbit_postprocess(s:splitbit)
+    " postprocess all splitbits
+    let l:splitbits_len = len(l:splitbits)
+    let l:last_result = v:null
+    for l:idx in range(l:splitbits_len)
+        let l:splitbit = l:splitbits[l:idx]
+        call s:splitbit_postprocess(l:splitbit)
 
         " search the parser's argument set to determine if the text identifies
         " with any of the argument specifications within
-        let s:match = argonaut#argset#cmp(a:parser.argset, s:splitbit.text)
+        let l:match = argonaut#argset#cmp(a:parser.argset, l:splitbit.text)
 
         " create an argument parser result object and store it
-        let s:new_result = s:argparser_result_new(s:match, v:null)
+        let l:new_result = s:argparser_result_new(l:match, v:null)
 
         " if this argument doesn't match one of the arguments in the argument
         " set, there are one of two possibilities:
-        if argonaut#utils#is_null(s:match)
+        if argonaut#utils#is_null(l:match)
             " possibility 1: the last iteration's result was stored, which
             " means the previous argument requires a value. Save this
             " splitbit's value to the previous result
-            if !argonaut#utils#is_null(s:last_result)
-                let s:last_result.value = s:splitbit.text
-                let s:last_result = v:null
+            if !argonaut#utils#is_null(l:last_result)
+                let l:last_result.value = l:splitbit.text
+                let l:last_result = v:null
                 continue
             endif
 
             " possibility 2: this is a plain-old unnamed argument (i.e.
             " something that wasn't recognized as an argument). Update the new
             " result to hold the splitbit's value and add it to the parser
-            let s:new_result.value = s:splitbit.text
-            call add(a:parser.args, s:new_result)
+            let l:new_result.value = l:splitbit.text
+            call add(a:parser.args, l:new_result)
             continue
         endif
 
         " otherwise, the argument DOES match one of the speciufied arguments.
         " Make sure we aren't expecting a value from the previous iteration
-        let s:arg_with_missing_value = v:null
-        if !argonaut#utils#is_null(s:last_result)
-            let s:arg_with_missing_value = s:last_result
-        elseif s:match.value_required && s:idx == s:splitbits_len - 1
-            let s:arg_with_missing_value = s:new_result
+        let l:arg_with_missing_value = v:null
+        if !argonaut#utils#is_null(l:last_result)
+            let l:arg_with_missing_value = l:last_result
+        elseif l:match.value_required && l:idx == l:splitbits_len - 1
+            let l:arg_with_missing_value = l:new_result
         endif
-        if !argonaut#utils#is_null(s:arg_with_missing_value)
-            let s:arg = s:arg_with_missing_value.arg
-            let s:arg_str = argonaut#argid#to_string(s:arg.identifiers[0])
-            let s:errmsg = 'the argument "' . s:arg_str . '" expects a value to ' .
+        if !argonaut#utils#is_null(l:arg_with_missing_value)
+            let l:arg = l:arg_with_missing_value.arg
+            let l:arg_str = argonaut#argid#to_string(l:arg.identifiers[0])
+            let l:errmsg = 'the argument "' . l:arg_str . '" expects a value to ' .
                          \ 'be specified alongside it'
-            call argonaut#utils#panic(s:errmsg)
+            call argonaut#utils#panic(l:errmsg)
         endif
 
         " increment the result's presence counter and add it to the parser
-        let s:match.presence_count += 1
-        call add(a:parser.args, s:new_result)
+        let l:match.presence_count += 1
+        call add(a:parser.args, l:new_result)
 
         " if the matched argument specification requires that a value be
-        " specified along with it, set `s:last_result` so we can capture this
+        " specified along with it, set `l:last_result` so we can capture this
         " value on the next iteration
-        if s:match.value_required
-            let s:last_result = s:new_result
+        if l:match.value_required
+            let l:last_result = l:new_result
         endif
     endfor
 
     " iterate through the argument set's argument specifications and count the
     " number of occurrences. Make sure they're within the required range
-    for s:arg in a:parser.argset.arguments
+    for l:arg in a:parser.argset.arguments
         " the minimum amount must be met
-        if s:arg.presence_count < s:arg.presence_count_min
-            let s:arg_str = argonaut#argid#to_string(s:arg.identifiers[0])
-            let s:errmsg = 'the argument "' . s:arg_str . '" must be specified ' .
-                         \ 'at least ' . s:arg.presence_count_min . ' time(s)'
-            call argonaut#utils#panic(s:errmsg)
+        if l:arg.presence_count < l:arg.presence_count_min
+            let l:arg_str = argonaut#argid#to_string(l:arg.identifiers[0])
+            let l:errmsg = 'the argument "' . l:arg_str . '" must be specified ' .
+                         \ 'at least ' . l:arg.presence_count_min . ' time(s)'
+            call argonaut#utils#panic(l:errmsg)
         endif
 
         " the maximum amount must not be exceeded
-        if s:arg.presence_count > s:arg.presence_count_max
-            let s:arg_str = argonaut#argid#to_string(s:arg.identifiers[0])
-            let s:errmsg = 'the argument "' . s:arg_str . '" must not be specified ' .
-                         \ 'more than ' . s:arg.presence_count_max . ' time(s)'
-            call argonaut#utils#panic(s:errmsg)
+        if l:arg.presence_count > l:arg.presence_count_max
+            let l:arg_str = argonaut#argid#to_string(l:arg.identifiers[0])
+            let l:errmsg = 'the argument "' . l:arg_str . '" must not be specified ' .
+                         \ 'more than ' . l:arg.presence_count_max . ' time(s)'
+            call argonaut#utils#panic(l:errmsg)
         endif
 
         " finally, remove the dictionary field; it's no longer needed
-        call remove(s:arg, 'presence_count')
+        call remove(l:arg, 'presence_count')
     endfor
 endfunction
 
@@ -317,21 +316,21 @@ endfunction
 " This should be called after `parser()`.
 function! argonaut#argparser#get_arg(parser, id_str) abort
     call argonaut#argparser#verify(a:parser)
-    let s:result = []
+    let l:result = []
     
     " examine each of the arguments that were parsed
-    for s:argresult in a:parser.args
+    for l:argresult in a:parser.args
         " if this argument has an argument specification, compare against the
         " provided ID string. If there's a match, add the result's value to
         " the list
-        let s:arg = s:argresult.arg
-        if !argonaut#utils#is_null(s:arg) &&
-         \ !argonaut#utils#is_null(argonaut#arg#cmp(s:arg, a:id_str))
-            call add(s:result, s:argresult.value)
+        let l:arg = l:argresult.arg
+        if !argonaut#utils#is_null(l:arg) &&
+         \ !argonaut#utils#is_null(argonaut#arg#cmp(l:arg, a:id_str))
+            call add(l:result, l:argresult.value)
         endif
     endfor
 
-    return s:result
+    return l:result
 endfunction
 
 " Convenience function that returns true or false depending on if the argument
@@ -352,17 +351,17 @@ endfunction
 " This should be called after `parser()`.
 function! argonaut#argparser#get_args(parser) abort
     call argonaut#argparser#verify(a:parser)
-    let s:result = []
+    let l:result = []
     
     " examine each of the arguments that were parsed
-    for s:argresult in a:parser.args
+    for l:argresult in a:parser.args
         " if this argument has no argument specification, add it
-        if !argonaut#utils#is_null(s:argresult.arg)
-            call add(s:result, s:argresult)
+        if !argonaut#utils#is_null(l:argresult.arg)
+            call add(l:result, l:argresult)
         endif
     endfor
 
-    return s:result
+    return l:result
 endfunction
 
 " Returns a list of arguments that were parsed that did not match any of the
@@ -371,17 +370,17 @@ endfunction
 " This should be called after `parser()`.
 function! argonaut#argparser#get_extra_args(parser) abort
     call argonaut#argparser#verify(a:parser)
-    let s:result = []
+    let l:result = []
     
     " examine each of the arguments that were parsed
-    for s:argresult in a:parser.args
+    for l:argresult in a:parser.args
         " if this argument has no argument specification, add it
-        if argonaut#utils#is_null(s:argresult.arg)
-            call add(s:result, s:argresult.value)
+        if argonaut#utils#is_null(l:argresult.arg)
+            call add(l:result, l:argresult.value)
         endif
     endfor
 
-    return s:result
+    return l:result
 endfunction
 
 
@@ -396,9 +395,9 @@ function! s:argparser_result_new(arg, value) abort
         call argonaut#arg#verify(a:arg)
     endif
     
-    let s:result = deepcopy(s:argparser_result_template)
-    let s:result.arg = a:arg
-    return s:result
+    let l:result = deepcopy(s:argparser_result_template)
+    let l:result.arg = a:arg
+    return l:result
 endfunction
 
 
@@ -416,9 +415,9 @@ endfunction
 
 " Constructs a new splitbit object, given text and an associated nesting pair.
 function! s:splitbit_new(nesting_pair) abort
-    let s:result = deepcopy(s:argparser_splitbit_template)
-    let s:result.nesting_pair = a:nesting_pair
-    return s:result
+    let l:result = deepcopy(s:argparser_splitbit_template)
+    let l:result.nesting_pair = a:nesting_pair
+    return l:result
 endfunction
 
 " Appends the given string to the splitbit's text.
@@ -435,32 +434,32 @@ endfunction
 " Any postprocessing that is done may modify the text of the splitbit.
 function! s:splitbit_postprocess(splitbit) abort
     " if there's no nesting pair...
-    let s:np = a:splitbit.nesting_pair
-    if argonaut#utils#is_null(s:np)
+    let l:np = a:splitbit.nesting_pair
+    if argonaut#utils#is_null(l:np)
         " does the text begin with '$'? It may be an environment variable that
         " was specified without the '{}' brackets
-        let s:text = trim(a:splitbit.text)
-        if argonaut#utils#str_begins_with(s:text, '$')
-            let a:splitbit.text = expand(s:text)
+        let l:text = trim(a:splitbit.text)
+        if argonaut#utils#str_begins_with(l:text, '$')
+            let a:splitbit.text = expand(l:text)
         endif
 
         return
     endif
 
     " if the nesting pair has no post-process field, we're done
-    if argonaut#utils#is_null(s:np.postprocess)
+    if argonaut#utils#is_null(l:np.postprocess)
         return
     endif
 
     " otherwise, use the post-process value to determine what to do
-    if s:np.postprocess == 'envvar'
-        let s:envvar = argonaut#utils#get_env(trim(a:splitbit.text))
-        if !argonaut#utils#is_null(s:envvar)
-            let a:splitbit.text = s:envvar
+    if l:np.postprocess == 'envvar'
+        let l:envvar = argonaut#utils#get_env(trim(a:splitbit.text))
+        if !argonaut#utils#is_null(l:envvar)
+            let a:splitbit.text = l:envvar
         endif
-    elseif s:np.postprocess == 'shell'
-        let s:shellout = argonaut#utils#run_shell_command(a:splitbit.text)
-        let a:splitbit.text = s:shellout
+    elseif l:np.postprocess == 'shell'
+        let l:shellout = argonaut#utils#run_shell_command(a:splitbit.text)
+        let a:splitbit.text = l:shellout
     endif
 endfunction
 

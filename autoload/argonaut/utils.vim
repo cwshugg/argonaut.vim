@@ -52,16 +52,16 @@ endfunction
 
 " Returns true if the string begins with the given prefix.
 function! argonaut#utils#str_begins_with(str, prefix) abort
-    let s:cmp_len = len(a:prefix)
-    let s:cmp_str = strpart(a:str, 0, s:cmp_len)
-    return argonaut#utils#str_cmp(s:cmp_str, a:prefix)
+    let l:cmp_len = len(a:prefix)
+    let l:cmp_str = strpart(a:str, 0, l:cmp_len)
+    return argonaut#utils#str_cmp(l:cmp_str, a:prefix)
 endfunction
 
 " Returns true if the string begins with the given prefix.
 function! argonaut#utils#str_begins_with_case_insensitive(str, prefix) abort
-    let s:cmp_len = len(a:prefix)
-    let s:cmp_str = strpart(a:str, 0, s:cmp_len)
-    return argonaut#utils#str_cmp_case_insensitive(s:cmp_str, a:prefix)
+    let l:cmp_len = len(a:prefix)
+    let l:cmp_str = strpart(a:str, 0, l:cmp_len)
+    return argonaut#utils#str_cmp_case_insensitive(l:cmp_str, a:prefix)
 endfunction
 
 " Examines a single character and returns true if it's whitespace.
@@ -84,8 +84,8 @@ endfunction
 " Returns the value of the given environment variable, or v:null if it doesn't
 " exist.
 function! argonaut#utils#run_shell_command(text) abort
-    :silent let s:result = system(a:text)
-    return s:result
+    :silent let l:result = system(a:text)
+    return l:result
 endfunction
 
 
@@ -114,19 +114,19 @@ endfunction
 function! argonaut#utils#list_dir(path) abort
     " make sure the given path is valid
     if !argonaut#utils#is_dir(a:path)
-        let s:errmsg = 'the given directory path (' . a:path .
+        let l:errmsg = 'the given directory path (' . a:path .
                      \ ') does not point to a valid directory'
-        call argonaut#utils#panic(s:errmsg)
+        call argonaut#utils#panic(l:errmsg)
     endif
 
-    let s:result = []
-    for s:file in split(globpath(a:path, '*'), "\n")
+    let l:result = []
+    for l:file in split(globpath(a:path, '*'), "\n")
         " if the file is a valid file or directory, add it
-        if argonaut#utils#is_file(s:file) || argonaut#utils#is_dir(s:file)
-            call add(s:result, s:file)
+        if argonaut#utils#is_file(l:file) || argonaut#utils#is_dir(l:file)
+            call add(l:result, l:file)
         endif
     endfor
 
-    return s:result
+    return l:result
 endfunction
 

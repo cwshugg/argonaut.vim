@@ -9,21 +9,21 @@
 " choose which of the below functions to call.
 function! argonaut#completion#complete(arglead, cmdline, cursorpos, argset) abort
     " start by looking for any matching argument identifiers
-    let s:argids = argonaut#completion#complete_argids(a:arglead, a:cmdline, a:cursorpos, a:argset)
-    if len(s:argids) > 0
-        return s:argids
+    let l:argids = argonaut#completion#complete_argids(a:arglead, a:cmdline, a:cursorpos, a:argset)
+    if len(l:argids) > 0
+        return l:argids
     endif
 
     " next, look for environment variables
-    let s:envvars = argonaut#completion#complete_envvars(a:arglead, a:cmdline, a:cursorpos)
-    if len(s:envvars) > 0
-        return s:envvars
+    let l:envvars = argonaut#completion#complete_envvars(a:arglead, a:cmdline, a:cursorpos)
+    if len(l:envvars) > 0
+        return l:envvars
     endif
 
     " next, look for files/directories
-    let s:paths = argonaut#completion#complete_files(a:arglead, a:cmdline, a:cursorpos)
-    if len(s:paths) > 0
-        return s:paths
+    let l:paths = argonaut#completion#complete_files(a:arglead, a:cmdline, a:cursorpos)
+    if len(l:paths) > 0
+        return l:paths
     endif
 endfunction
 
@@ -34,53 +34,53 @@ endfunction
 " for a vim completion function. Run `:h command-completion-customlist` to see
 " this in the vim documentation.
 function! argonaut#completion#complete_argids(arglead, cmdline, cursorpos, argset) abort
-    let s:argids = argonaut#argset#get_all_argids(a:argset)
-    let s:result = []
+    let l:argids = argonaut#argset#get_all_argids(a:argset)
+    let l:result = []
 
     " for each of the identifiers, determine if the user's current input
     " matches the beginning of the argument. If it does, add it to a final
     " result
-    for s:argid in s:argids
-        let s:argid_str = argonaut#argid#to_string(s:argid)
+    for l:argid in l:argids
+        let l:argid_str = argonaut#argid#to_string(l:argid)
 
         " if this argid allows for case-insensitive matching, we'll compare
         " here accordingly
-        let s:argid_match = 0
-        if argonaut#argid#get_case_sensitive(s:argid)
-            let s:argid_match = argonaut#utils#str_begins_with(s:argid_str, a:arglead)
+        let l:argid_match = 0
+        if argonaut#argid#get_case_sensitive(l:argid)
+            let l:argid_match = argonaut#utils#str_begins_with(l:argid_str, a:arglead)
         else
-            let s:argid_match = argonaut#utils#str_begins_with_case_insensitive(s:argid_str, a:arglead)
+            let l:argid_match = argonaut#utils#str_begins_with_case_insensitive(l:argid_str, a:arglead)
         endif
 
         " if there was a match, add it to the result
-        if s:argid_match
-            call add(s:result, s:argid_str)
+        if l:argid_match
+            call add(l:result, l:argid_str)
         endif
     endfor
 
-    return s:result
+    return l:result
 endfunction
 
 " Uses the provided arguments to suggest file paths based on the user's
 " current input.
 function! argonaut#completion#complete_files(arglead, cmdline, cursorpos) abort
     " expand the argument in case environment variables are included
-    let s:arg = expand(a:arglead)
+    let l:arg = expand(a:arglead)
 
     " examine the current user input; is it a valid directory?
-    if argonaut#utils#is_dir(s:arg)
+    if argonaut#utils#is_dir(l:arg)
         " if so, we'll generate a list of all files within the directory and
         " return it
-        return argonaut#utils#list_dir(s:arg)
+        return argonaut#utils#list_dir(l:arg)
     endif
     
     " otherwise, does the input match a specific file path? (Or, does it at
     " least match the beginning of the file's name?) If so, return it
-    let s:path_dirname = argonaut#utils#get_dirname(s:arg)
-    let s:path_basename = argonaut#utils#get_basename(s:arg)
-    let s:files = split(globpath(s:path_dirname, s:path_basename . '*'), "\n")
-    if len(s:files) > 0
-        return s:files
+    let l:path_dirname = argonaut#utils#get_dirname(l:arg)
+    let l:path_basename = argonaut#utils#get_basename(l:arg)
+    let l:files = split(globpath(l:path_dirname, l:path_basename . '*'), "\n")
+    if len(l:files) > 0
+        return l:files
     endif
 endfunction
 
@@ -88,40 +88,40 @@ endfunction
 " user is typing an environment variable.
 function! argonaut#completion#complete_envvars(arglead, cmdline, cursorpos) abort
     " does the user's current string start with the correct prefix?
-    let s:prefix = v:null
-    let s:suffix = v:null
+    let l:prefix = v:null
+    let l:suffix = v:null
     if argonaut#utils#str_begins_with(a:arglead, '${')
-        let s:prefix = '${'
-        let s:suffix = '}'
+        let l:prefix = '${'
+        let l:suffix = '}'
     elseif argonaut#utils#str_begins_with(a:arglead, '$')
-        let s:prefix = '$'
-        let s:suffix = ''
+        let l:prefix = '$'
+        let l:suffix = ''
     endif
 
     " if environment variable syntax was not detected, return early
-    if argonaut#utils#is_null(s:prefix)
+    if argonaut#utils#is_null(l:prefix)
         return []
     endif
 
     " otherwise, extract the name based on the detected prefix
-    let s:prefix_len = len(s:prefix)
-    let s:arglead_len = len(a:arglead)
-    let s:name = strpart(a:arglead, s:prefix_len, s:arglead_len - s:prefix_len)
+    let l:prefix_len = len(l:prefix)
+    let l:arglead_len = len(a:arglead)
+    let l:name = strpart(a:arglead, l:prefix_len, l:arglead_len - l:prefix_len)
     
     " get a list of all defined environment variables and iterate through them
-    let s:result = []
-    let s:env = argonaut#utils#get_envs()
-    for s:env_name in keys(s:env)
+    let l:result = []
+    let l:env = argonaut#utils#get_envs()
+    for l:env_name in keys(l:env)
         " if the user's current input name matches the beginning of the
         " current environment variable, add it to the resulting list
-        if argonaut#utils#str_begins_with(s:env_name, s:name)
+        if argonaut#utils#str_begins_with(l:env_name, l:name)
             " build a string to add to the result, based on the prefix and
             " suffix that was parsed earlier
-            let s:result_str = s:prefix . s:env_name . s:suffix
-            call add(s:result, s:result_str)
+            let l:result_str = l:prefix . l:env_name . l:suffix
+            call add(l:result, l:result_str)
         endif
     endfor
 
-    return s:result
+    return l:result
 endfunction
 

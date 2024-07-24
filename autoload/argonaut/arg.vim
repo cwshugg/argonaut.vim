@@ -35,57 +35,57 @@ let s:arg_template = {
 " ======================== Argument Object Interface ========================= "
 " Creates a new argument object.
 function! argonaut#arg#new(...) abort
-    let s:result = deepcopy(s:arg_template)
+    let l:result = deepcopy(s:arg_template)
 
     " argument 1 (if provided) represents the identifier list
     if a:0 > 0
-        let s:result.identifiers = a:1
+        let l:result.identifiers = a:1
     endif
     
     " argument 2 (if provided) represents the description
     if a:0 > 1
-        let s:result.description = argonaut#utils#sanitize_value(a:2)
+        let l:result.description = argonaut#utils#sanitize_value(a:2)
     endif
     
     " argument 3 (if provided) represents the presence count minimum
     if a:0 > 2
-        let s:result.presence_count_min = a:3
+        let l:result.presence_count_min = a:3
     endif
     
     " argument 4 (if provided) represents the presence count maximum
     if a:0 > 3
-        let s:result.presence_count_max = a:4
+        let l:result.presence_count_max = a:4
     endif
 
     " argument 5 (if provided) represents whether or not a value is required
     if a:0 > 4
-        let s:result.value_required = argonaut#utils#sanitize_bool(a:5)
+        let l:result.value_required = argonaut#utils#sanitize_bool(a:5)
     endif
 
     " argument 6 (if provided) represents the value hint, which is used to
     " help the user understand what value they should provide for tthis
     " argument
     if a:0 > 5
-        let s:result.value_hint = argonaut#utils#sanitize_value(a:6)
+        let l:result.value_hint = argonaut#utils#sanitize_value(a:6)
     endif
 
     " make sure too many arguments weren't provided
     if a:0 > 6
-        let s:errmsg = 'argonaut#arg#new() accepts no more than 6 arguments'
-        call argonaut#utils#panic(s:errmsg)
+        let l:errmsg = 'argonaut#arg#new() accepts no more than 6 arguments'
+        call argonaut#utils#panic(l:errmsg)
     endif
 
-    return s:result
+    return l:result
 endfunction
 
 " Checks the given object for all fields in the argument template. An error is
 " thrown if they are all not found.
 function! argonaut#arg#verify(arg) abort
-    for s:key in keys(s:arg_template)
-        if !has_key(a:arg, s:key)
-            let s:errmsg = 'the provided object does not appear to be a valid ' .
+    for l:key in keys(s:arg_template)
+        if !has_key(a:arg, l:key)
+            let l:errmsg = 'the provided object does not appear to be a valid ' .
                          \ 'arg object'
-            call argonaut#utils#panic(s:errmsg)
+            call argonaut#utils#panic(l:errmsg)
         endif
     endfor
 endfunction
@@ -93,31 +93,31 @@ endfunction
 " Builds and returns a string representation of the argument object.
 function! argonaut#arg#to_string(arg) abort
     call argonaut#arg#verify(a:arg)
-    let s:result = ''
+    let l:result = ''
 
     " iterate through all identifiers and build a string to display them all
-    let s:num_aids = len(a:arg.identifiers)
-    let s:aid_str = ''
-    if s:num_aids > 0
-        for s:idx in range(s:num_aids)
-            let s:aid = a:arg.identifiers[s:idx]
-            let s:aid_str .= argonaut#argid#to_string(s:aid)
+    let l:num_aids = len(a:arg.identifiers)
+    let l:aid_str = ''
+    if l:num_aids > 0
+        for l:idx in range(l:num_aids)
+            let l:aid = a:arg.identifiers[l:idx]
+            let l:aid_str .= argonaut#argid#to_string(l:aid)
     
             " add a space if this isn't the last one
-            if s:idx < s:num_aids - 1
-                let s:aid_str .= ' '
+            if l:idx < l:num_aids - 1
+                let l:aid_str .= ' '
             endif
         endfor
     else
-        let s:aid_str = '(NONE)'
+        let l:aid_str = '(NONE)'
     endif
-    let s:result .= '[identifiers: ' . s:aid_str . '] '
+    let l:result .= '[identifiers: ' . l:aid_str . '] '
 
     " add the rest of the properties to the string
-    let s:result .= '[presence_count_min: ' . a:arg.presence_count_min . '] '
-    let s:result .= '[presence_count_max: ' . a:arg.presence_count_max . '] '
-    let s:result .= '[value_required: ' . a:arg.value_required . '] '
-    return s:result
+    let l:result .= '[presence_count_min: ' . a:arg.presence_count_min . '] '
+    let l:result .= '[presence_count_max: ' . a:arg.presence_count_max . '] '
+    let l:result .= '[value_required: ' . a:arg.value_required . '] '
+    return l:result
 endfunction
 
 " Adds the given argument identifier object to the argument.
@@ -142,17 +142,17 @@ endfunction
 " Setter for `presence_count_min`.
 function! argonaut#arg#set_presence_count_min(arg, presence_count_min) abort
     call argonaut#arg#verify(a:arg)
-    let s:count = argonaut#utils#sanitize_value(a:presence_count_min)
+    let l:count = argonaut#utils#sanitize_value(a:presence_count_min)
 
     " make sure the provided value is zero, or a positive integer. If it's
     " zero, that means the argument is not required to be present
-    if s:count < 0
-        let s:errmsg = 'the presence count minimum for an argument must be ' .
+    if l:count < 0
+        let l:errmsg = 'the presence count minimum for an argument must be ' .
                      \ 'either zero or a positive integer ' .
-                     \ '(you provided: ' . s:count . ')'
-        call argonaut#utils#panic(s:errmsg)
+                     \ '(you provided: ' . l:count . ')'
+        call argonaut#utils#panic(l:errmsg)
     endif
-    let a:arg.presence_count_min = s:count
+    let a:arg.presence_count_min = l:count
 endfunction
 
 " Getter for `presence_count_min`.
@@ -164,17 +164,17 @@ endfunction
 " Setter for `presence_count_max`.
 function! argonaut#arg#set_presence_count_max(arg, presence_count_max) abort
     call argonaut#arg#verify(a:arg)
-    let s:count = argonaut#utils#sanitize_value(a:presence_count_max)
+    let l:count = argonaut#utils#sanitize_value(a:presence_count_max)
 
     " for the count maximum, positive values indicate an upper maximum, while
     " any negative value indicates an unlimited maximum. Zero is the one value
     " that this field cannot hold
-    if s:count == 0
-        let s:errmsg = 'the presence count maximum for an argument must not ' .
-                     \ 'be zero )you provided: ' . s:count . ')'
-        call argonaut#utils#panic(s:errmsg)
+    if l:count == 0
+        let l:errmsg = 'the presence count maximum for an argument must not ' .
+                     \ 'be zero )you provided: ' . l:count . ')'
+        call argonaut#utils#panic(l:errmsg)
     endif
-    let a:arg.presence_count_max = s:count
+    let a:arg.presence_count_max = l:count
 endfunction
 
 " Getter for `presence_count_max`.
@@ -212,9 +212,9 @@ endfunction
 " returned.
 function! argonaut#arg#cmp(arg, str)
     call argonaut#arg#verify(a:arg)
-    for s:aid in a:arg.identifiers
-        if argonaut#argid#cmp(s:aid, a:str)
-            return s:aid
+    for l:aid in a:arg.identifiers
+        if argonaut#argid#cmp(l:aid, a:str)
+            return l:aid
         endif
     endfor
 

@@ -13,7 +13,6 @@ if exists('g:argonaut_initialized')
 endif
 let g:argonaut_initialized = 1
 let s:argonaut_description = 'The Customizable Vim Command Argument System'
-let g:argonaut_version = '0.0.1'
 let s:argonaut_author = 'cwshugg'
 
 
@@ -58,19 +57,18 @@ endfunction
 function! s:argonaut_command(input)
     " Create an argument parser object, and pass it the argument set, so it
     " knows what options to look for. Then, invoke the parsing function.
-    let s:parser = argonaut#argparser#new(s:command_argset)
-    call argonaut#argparser#parse(s:parser, a:input)
+    let l:parser = argonaut#argparser#new(s:command_argset)
+    call argonaut#argparser#parse(l:parser, a:input)
 
     echo 'Argonaut: ' . s:argonaut_description
 
     " if the help argument was provided by the user, show a help menu
-    if argonaut#argparser#has_arg(s:parser, '-h')
+    if argonaut#argparser#has_arg(l:parser, '-h')
         call argonaut#argset#show_help(s:command_argset)
         return
     endif
 
     echo 'Author:   ' . s:argonaut_author
-    echo 'Version:  ' . g:argonaut_version
     echo "\n"
     echo 'To get started, run `:h argonaut`'
 endfunction

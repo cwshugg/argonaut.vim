@@ -14,27 +14,27 @@ let s:argset_template = {
 " ============================ Argument Set Index ============================ "
 " Creates a new argument set object.
 function! argonaut#argset#new(...) abort
-    let s:result = deepcopy(s:argset_template)
+    let l:result = deepcopy(s:argset_template)
 
     " argument 1 (if provided) represents the argument list
     if a:0 > 0
-        let s:result.arguments = a:1
+        let l:result.arguments = a:1
     endif
 
     " make sure too many arguments weren't provided
     if a:0 > 1
-        let s:errmsg = 'argonaut#argset#new() accepts no more than 1 argument'
-        call argonaut#utils#panic(s:errmsg)
+        let l:errmsg = 'argonaut#argset#new() accepts no more than 1 argument'
+        call argonaut#utils#panic(l:errmsg)
     endif
 
-    return s:result
+    return l:result
 endfunction
 
 " Checks the given object for all fields in the argument set template. An
 " error is thrown if they are all not found.
 function! argonaut#argset#verify(set) abort
-    for s:key in keys(s:argset_template)
-        if !has_key(a:set, s:key)
+    for l:key in keys(s:argset_template)
+        if !has_key(a:set, l:key)
             call argonaut#utils#panic('the provided object does not appear to be a valid argset object')
         endif
     endfor
@@ -44,20 +44,20 @@ endfunction
 function! argonaut#argset#to_string(set) abort
     call argonaut#argset#verify(a:set)
     
-    let s:num_args = len(a:set.arguments)
-    let s:result = 'Argument Set - ' . s:num_args . ' argument(s)'
+    let l:num_args = len(a:set.arguments)
+    let l:result = 'Argument Set - ' . l:num_args . ' argument(s)'
 
     " iterate through all identifiers and build a string to display them all
-    let s:arg_str = ''
-    if s:num_args > 0
-        for s:idx in range(s:num_args)
-            let s:arg = a:set.arguments[s:idx]
-            let s:arg_str .= "\n" . argonaut#arg#to_string(s:arg)
+    let l:arg_str = ''
+    if l:num_args > 0
+        for l:idx in range(l:num_args)
+            let l:arg = a:set.arguments[l:idx]
+            let l:arg_str .= "\n" . argonaut#arg#to_string(l:arg)
         endfor
     endif
-    let s:result .= s:arg_str
+    let l:result .= l:arg_str
 
-    return s:result
+    return l:result
 endfunction
 
 " Adds a new argument object to the set.
@@ -72,9 +72,9 @@ endfunction
 " v:null is returned.
 function! argonaut#argset#cmp(set, str) abort
     call argonaut#argset#verify(a:set)
-    for s:arg in a:set.arguments
-        if !argonaut#utils#is_null(argonaut#arg#cmp(s:arg, a:str))
-            return s:arg
+    for l:arg in a:set.arguments
+        if !argonaut#utils#is_null(argonaut#arg#cmp(l:arg, a:str))
+            return l:arg
         endif
     endfor
 
@@ -87,17 +87,17 @@ endfunction
 " commands.
 function! argonaut#argset#get_all_argids(set) abort
     call argonaut#argset#verify(a:set)
-    let s:argids = []
+    let l:argids = []
 
     " iterate through all arguments in the set
-    for s:arg in a:set.arguments
+    for l:arg in a:set.arguments
         " iterate through all argument identifiers in the argument
-        for s:argid in s:arg.identifiers
-            call add(s:argids, s:argid)
+        for l:argid in l:arg.identifiers
+            call add(l:argids, l:argid)
         endfor
     endfor
 
-    return s:argids
+    return l:argids
 endfunction
 
 " A built-in helper menu that shows all arguments stored in the given argset.
@@ -115,65 +115,65 @@ function! argonaut#argset#show_help(set) abort
     echo 'Available arguments:'
 
     " iterate through each argument
-    for s:arg in a:set.arguments
+    for l:arg in a:set.arguments
         " build a string that shows all possible identifiers for the argument
-        let s:argid_str = ''
-        let s:argids_len = len(s:arg.identifiers)
-        for s:idx in range(s:argids_len)
-            let s:argid = s:arg.identifiers[s:idx]
-            let s:argid_str .= argonaut#argid#to_string(s:argid)
+        let l:argid_str = ''
+        let l:argids_len = len(l:arg.identifiers)
+        for l:idx in range(l:argids_len)
+            let l:argid = l:arg.identifiers[l:idx]
+            let l:argid_str .= argonaut#argid#to_string(l:argid)
 
             " if a value is required, show the value hint next to the first
             " argid
-            if s:arg.value_required && s:idx == 0
-                let s:argid_str .= ' ' . s:arg.value_hint
+            if l:arg.value_required && l:idx == 0
+                let l:argid_str .= ' ' . l:arg.value_hint
             endif
 
             " add a delimeter if we're not on the last argid
-            if s:idx < s:argids_len - 1
-                let s:argid_str .= ', '
+            if l:idx < l:argids_len - 1
+                let l:argid_str .= ', '
             endif
         endfor
 
         " if the argument must be specified at least once, prefix the argid
         " string with a special value to indicate this
-        let s:argid_prefix = '    '
-        if s:arg.presence_count_min > 0
-            s:argid_prefix = '  * '
+        let l:argid_prefix = '    '
+        if l:arg.presence_count_min > 0
+            let l:argid_prefix = '  * '
         endif
-        echo s:argid_prefix . s:argid_str
+        echo l:argid_prefix . l:argid_str
         
         " show the argument's description (if one was provided)
-        if !argonaut#utils#is_empty(s:arg.description)
-            echo '        ' . s:arg.description
+        if !argonaut#utils#is_empty(l:arg.description)
+            echo '        ' . l:arg.description
         endif
 
         " show the number of times the argument can (or must) be specified
-        let s:presence_count_str = ''
-        if s:arg.presence_count_min > 0
+        let l:presence_count_str = ''
+        if l:arg.presence_count_min > 0
             " if the presence min and max are both 1, then we'll word things
             " differently
-            if s:arg.presence_count_min == 1 && s:arg.presence_count_max == 1
-                let s:presence_count_str .= 'This argument must be specified exactly once'
+            if l:arg.presence_count_min == 1 && l:arg.presence_count_max == 1
+                let l:presence_count_str .= 'This argument must be specified exactly once'
             " otherwise, make sure to explain both numbers
             else
-                let s:presence_count_str .= 'This argument must be specified at least ' .
-                                          \ s:arg.presence_count_min . ' times'
-                if s:arg.presence_count_max > 0
-                    let s:presence_count_str .= ', but no more than ' . 
-                                              \ s:arg.presence_count_max . ' times'
+                let l:presence_count_str .= 'This argument must be specified at least ' .
+                                          \ l:arg.presence_count_min . ' times'
+                if l:arg.presence_count_max > 0
+                    let l:presence_count_str .= ', but no more than ' . 
+                                              \ l:arg.presence_count_max . ' times'
                 endif
             endif
 
-        elseif s:arg.presence_count_max > 1
+        elseif l:arg.presence_count_max > 1
             " only show this if the maximum is more than 1. Typically, an
             " argument can be specified only once, so anything greater
             " warrants some explanation
-            let s:presence_count_str .= 'This argument may be specified up to ' .
-                                      \ s:arg.presence_count_max . ' times'
+            let l:presence_count_str .= 'This argument may be specified up to ' .
+                                      \ l:arg.presence_count_max . ' times'
         endif
-        if !argonaut#utils#is_empty(s:presence_count_str)
-            echo '        ' . s:presence_count_str . '.'
+        if !argonaut#utils#is_empty(l:presence_count_str)
+            echo '        ' . l:presence_count_str . '.'
         endif
     endfor
 endfunction
