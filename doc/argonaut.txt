@@ -7,13 +7,12 @@
 >
     If you find this plugin useful, I would greatly appreciate a star on
     GitHub.  Stars help me understand how much attention this plugin is getting
-    in the Vim community, and thus how much time I should devote to improving
-    it.
+    in the Vim community, and by extension how much time I should devote to
+    improving it.
 
     If you find any bugs in the plugin, or want to suggest (or even contribute
     to) a new feature, please feel free to open an issue on GitHub. Thanks!
 <
-
 
 ================================================================================
 CONTENTS                                                     *argonaut-contents*
@@ -416,4 +415,11 @@ it, passing in the argument containing the command's arguments:
         \ DuplicateLine
         \ call s:duplicate_line(<q-args>)
 <
+
+Argonaut's built-in completion will complete the following strings (in the
+following order):
+
+1. Your argset's argument identifiers.
+2. Environment variables (strings that begin with `$` or `${`).
+3. File and directory paths (also including environment variables).
 

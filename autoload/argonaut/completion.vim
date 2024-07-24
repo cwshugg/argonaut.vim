@@ -14,6 +14,12 @@ function! argonaut#completion#complete(arglead, cmdline, cursorpos, argset) abor
         return s:argids
     endif
 
+    " next, look for environment variables
+    let s:envvars = argonaut#completion#complete_envvars(a:arglead, a:cmdline, a:cursorpos)
+    if len(s:envvars) > 0
+        return s:envvars
+    endif
+
     " next, look for files/directories
     let s:paths = argonaut#completion#complete_files(a:arglead, a:cmdline, a:cursorpos)
     if len(s:paths) > 0
@@ -76,5 +82,46 @@ function! argonaut#completion#complete_files(arglead, cmdline, cursorpos) abort
     if len(s:files) > 0
         return s:files
     endif
+endfunction
+
+" Uses the provided arguments to suggest environment variable names as the
+" user is typing an environment variable.
+function! argonaut#completion#complete_envvars(arglead, cmdline, cursorpos) abort
+    " does the user's current string start with the correct prefix?
+    let s:prefix = v:null
+    let s:suffix = v:null
+    if argonaut#utils#str_begins_with(a:arglead, '${')
+        let s:prefix = '${'
+        let s:suffix = '}'
+    elseif argonaut#utils#str_begins_with(a:arglead, '$')
+        let s:prefix = '$'
+        let s:suffix = ''
+    endif
+
+    " if environment variable syntax was not detected, return early
+    if argonaut#utils#is_null(s:prefix)
+        return []
+    endif
+
+    " otherwise, extract the name based on the detected prefix
+    let s:prefix_len = len(s:prefix)
+    let s:arglead_len = len(a:arglead)
+    let s:name = strpart(a:arglead, s:prefix_len, s:arglead_len - s:prefix_len)
+    
+    " get a list of all defined environment variables and iterate through them
+    let s:result = []
+    let s:env = argonaut#utils#get_envs()
+    for s:env_name in keys(s:env)
+        " if the user's current input name matches the beginning of the
+        " current environment variable, add it to the resulting list
+        if argonaut#utils#str_begins_with(s:env_name, s:name)
+            " build a string to add to the result, based on the prefix and
+            " suffix that was parsed earlier
+            let s:result_str = s:prefix . s:env_name . s:suffix
+            call add(s:result, s:result_str)
+        endif
+    endfor
+
+    return s:result
 endfunction
 

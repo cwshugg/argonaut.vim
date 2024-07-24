@@ -76,6 +76,11 @@ function! argonaut#utils#get_env(name) abort
     return getenv(a:name)
 endfunction
 
+" Returns a dictionary of all environment variables.
+function! argonaut#utils#get_envs() abort
+    return environ()
+endfunction
+
 " Returns the value of the given environment variable, or v:null if it doesn't
 " exist.
 function! argonaut#utils#run_shell_command(text) abort
