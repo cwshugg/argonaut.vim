@@ -198,7 +198,7 @@ endfunction
 " Setter for `value_hint`.
 function! argonaut#arg#set_value_hint(arg, value_hint) abort
     call argonaut#arg#verify(a:arg)
-    let a:arg.value_hint = argonaut#utils#sanitize_bool(a:value_hint)
+    let a:arg.value_hint = argonaut#utils#sanitize_value(a:value_hint)
 endfunction
 
 " Getter for `value_hint`.
