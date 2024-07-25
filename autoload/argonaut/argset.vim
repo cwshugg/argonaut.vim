@@ -19,6 +19,35 @@ function! argonaut#argset#new(...) abort
     " argument 1 (if provided) represents the argument list
     if a:0 > 0
         let l:result.arguments = a:1
+
+        " make sure none of the arguments' identifiers collide with eachother
+        let l:args_len = len(l:result.arguments)
+        for l:i in range(l:args_len)
+            let l:arg1 = l:result.arguments[l:i]
+            call argonaut#arg#verify(l:arg1)
+
+            for l:j in range(l:args_len)
+                " skip comparisons against the same object (i == j)
+                if l:i == l:j
+                    continue
+                endif
+
+                let l:arg2 = l:result.arguments[l:j]
+
+                " for each of the argument IDs in one of the arguments,
+                " compare it against the other argument
+                for l:argid in l:arg1.identifiers
+                    let l:argid_str = argonaut#argid#to_string(l:argid)
+                    let l:match = argonaut#arg#cmp(l:arg2, l:argid_str)
+                    if !argonaut#utils#is_null(l:match)
+                        let l:errmsg = 'the identifier "' . l:argid_str .
+                                     \ '" was specified more than once in ' .
+                                     \ 'the provided argument list.'
+                        call argonaut#utils#panic(l:errmsg)
+                    endif
+                endfor
+            endfor
+        endfor
     endif
 
     " make sure too many arguments weren't provided
@@ -64,6 +93,21 @@ endfunction
 function! argonaut#argset#add_arg(set, arg) abort
     call argonaut#argset#verify(a:set)
     call argonaut#arg#verify(a:arg)
+
+    " make sure none of the new argument's identifiers match up with existing
+    " arguments in the set
+    for l:new_argid in a:arg.identifiers
+        let l:new_argid_str = argonaut#argid#to_string(l:new_argid)
+        for l:a in a:set.arguments
+            let l:argid = argonaut#arg#cmp(l:a, l:new_argid_str)
+            if !argonaut#utils#is_null(l:argid)
+                let l:errmsg = 'the identifier "' . l:new_argid_str .
+                             \ '" already exists in this argument set'
+                call argonaut#utils#panic(l:errmsg)
+            endif
+        endfor
+    endfor
+
     call add(a:set.arguments, a:arg)
 endfunction
 

@@ -38,7 +38,8 @@ let s:argparser_nesting_pairs = [
     \ {'opener': '"',   'closer': '"',  'postprocess': v:null},
     \ {'opener': "'",   'closer': "'",  'postprocess': v:null},
     \ {'opener': "$(",  'closer': ")",  'postprocess': 'shell'},
-    \ {'opener': "${",  'closer': "}",  'postprocess': 'envvar'}
+    \ {'opener': "${",  'closer': "}",  'postprocess': 'envvar'},
+    \ {'opener': ":(",  'closer': ")",  'postprocess': 'vim_command'},
 \ ]
 
 
@@ -211,12 +212,13 @@ function! argonaut#argparser#parse(parser, str) abort
     call argonaut#argparser#verify(a:parser)
     let a:parser.args = []
 
-    " before splitting the string and processing it, we'll create temporary
-    " dictionary fields within each of the argument specification objects in
-    " the parser's argument set. These will be used to count the number of
-    " occurrences we find below
+    " before splitting the string and processing it, we'll set up a local
+    " list to keep track of the number of occurrences for each argument in the
+    " argset
+    let l:presence_counts = {}
     for l:arg in a:parser.argset.arguments
-        let l:arg.presence_count = 0
+        let l:key = argonaut#argid#to_string(l:arg.identifiers[0])
+        let l:presence_counts[l:key] = 0
     endfor
 
     " first, split the string into pieces
@@ -273,7 +275,8 @@ function! argonaut#argparser#parse(parser, str) abort
         endif
 
         " increment the result's presence counter and add it to the parser
-        let l:match.presence_count += 1
+        let l:presence_counts_key = argonaut#argid#to_string(l:match.identifiers[0])
+        let l:presence_counts[l:presence_counts_key] += 1
         call add(a:parser.args, l:new_result)
 
         " if the matched argument specification requires that a value be
@@ -287,8 +290,12 @@ function! argonaut#argparser#parse(parser, str) abort
     " iterate through the argument set's argument specifications and count the
     " number of occurrences. Make sure they're within the required range
     for l:arg in a:parser.argset.arguments
+        " retrieve the presence counter for this argument
+        let l:presence_counts_key = argonaut#argid#to_string(l:arg.identifiers[0])
+        let l:presence_count = l:presence_counts[l:presence_counts_key]
+
         " the minimum amount must be met
-        if l:arg.presence_count < l:arg.presence_count_min
+        if l:presence_count < l:arg.presence_count_min
             let l:arg_str = argonaut#argid#to_string(l:arg.identifiers[0])
             let l:errmsg = 'the argument "' . l:arg_str . '" must be specified ' .
                          \ 'at least ' . l:arg.presence_count_min . ' time(s)'
@@ -296,15 +303,12 @@ function! argonaut#argparser#parse(parser, str) abort
         endif
 
         " the maximum amount must not be exceeded
-        if l:arg.presence_count > l:arg.presence_count_max
+        if l:presence_count > l:arg.presence_count_max
             let l:arg_str = argonaut#argid#to_string(l:arg.identifiers[0])
             let l:errmsg = 'the argument "' . l:arg_str . '" must not be specified ' .
                          \ 'more than ' . l:arg.presence_count_max . ' time(s)'
             call argonaut#utils#panic(l:errmsg)
         endif
-
-        " finally, remove the dictionary field; it's no longer needed
-        call remove(l:arg, 'presence_count')
     endfor
 endfunction
 
@@ -460,6 +464,12 @@ function! s:splitbit_postprocess(splitbit) abort
     elseif l:np.postprocess == 'shell'
         let l:shellout = argonaut#utils#run_shell_command(a:splitbit.text)
         let a:splitbit.text = l:shellout
+    elseif l:np.postprocess == 'vim_command'
+        let l:vimout = ''
+        redir =>> l:vimout
+        silent execute a:splitbit.text
+        redir END
+        let a:splitbit.text = trim(l:vimout)
     endif
 endfunction
 

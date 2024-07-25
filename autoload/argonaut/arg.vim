@@ -40,6 +40,31 @@ function! argonaut#arg#new(...) abort
     " argument 1 (if provided) represents the identifier list
     if a:0 > 0
         let l:result.identifiers = a:1
+
+        " iterate through the identifier list and make sure we don't have any
+        " conflicts (no two identifiers can be the same)
+        let l:argids_len = len(l:result.identifiers)
+        for l:i in range(l:argids_len)
+            let l:argid1 = l:result.identifiers[l:i]
+            call argonaut#argid#verify(l:argid1)
+
+            for l:j in range(l:argids_len)
+                " skip comparisons against the same object
+                if l:i == l:j
+                    continue
+                endif
+
+                " compare both argid strings for a match
+                let l:argid2 = l:result.identifiers[l:j]
+                let l:argid2_str = argonaut#argid#to_string(l:argid2)
+                if argonaut#argid#cmp(l:argid1, l:argid2_str)
+                    let l:errmsg = 'the identifier "' . l:argid2_str .
+                                 \ '" was specified more than one in the ' .
+                                 \ 'provided list of argument identifier'
+                    call argonaut#utils#panic(l:errmsg)
+                endif
+            endfor
+        endfor
     endif
     
     " argument 2 (if provided) represents the description
@@ -124,6 +149,18 @@ endfunction
 function! argonaut#arg#add_argid(arg, aid) abort
     call argonaut#arg#verify(a:arg)
     call argonaut#argid#verify(a:aid)
+
+    " check the existing argids to make there this identifier doesn't already
+    " exist in our argument object; no two identifiers may be equivalent
+    let l:aid_str = argonaut#argid#to_string(a:aid)
+    for l:argid in a:arg.identifiers
+        if argonaut#argid#cmp(l:argid, l:aid_str)
+            let l:errmsg = 'the identifier "' . l:aid_str .
+                         \ '" already exists in the provided argument'
+            call argonaut#utils#panic(l:errmsg)
+        endif
+    endfor
+
     call add(a:arg.identifiers, a:aid)
 endfunction
 
