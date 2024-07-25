@@ -10,7 +10,7 @@
      |                      |
      |   ______    ______   |   Providing you with:
      |  |      \  /      |  |   
-     |   \     |  |     /   |    * Easy configuration to add arguments to your
+     |   \     |  |     /   |    * A clean interface to add arguments to your
     |     \    |  |    /     |     Vim script/plugin commands.
     |      \   \__/   /      |   * Bash-like command-line argument parsing.
     |       |        |       |   * Support for environment variable retrieval
