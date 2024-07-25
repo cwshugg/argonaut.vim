@@ -15,6 +15,7 @@
 let s:argparser_template = {
     \ 'argset': v:null,
     \ 'args': [],
+    \ 'help_arg': v:null
 \ }
 
 " Template object used to create 'splitbits', which is an intermediate object
@@ -87,6 +88,126 @@ endfunction
 function! argonaut#argparser#get_argset(parser) abort
     call argonaut#argparser#verify(a:parser)
     return get(a:parser, 'argset')
+endfunction
+
+" Setter for `help_arg`.
+function! argonaut#argparser#set_help_arg(parser, help_arg) abort
+    call argonaut#argparser#verify(a:parser)
+    call argonaut#arg#verify(a:help_arg)
+
+    " the argparser must have an argset at this point in time
+    if argonaut#utils#is_null(a:parser.argset)
+        let l:errmsg = 'the argparser must first be given an argset before ' .
+                     \ 'the help_arg can be set'
+        call argonaut#utils#panic(l:errmsg)
+    endif
+
+    " and, the argset must contain this argument
+    let l:help_arg_is_in_argset = v:false
+    for l:arg in a:parser.argset.arguments
+        if l:arg is a:help_arg
+            let l:help_arg_is_in_argset = v:true
+            break
+        endif
+    endfor
+    if !l:help_arg_is_in_argset
+        let l:errmsg = "the help_arg must be a part of the argparser's argset"
+        call argonaut#utils#panic(l:errmsg)
+    endif
+
+    let a:parser.help_arg = a:help_arg
+endfunction
+
+" Getter for `help_arg`.
+function! argonaut#argparser#get_help_arg(parser) abort
+    call argonaut#argparser#verify(a:parser)
+    return get(a:parser, 'help_arg')
+endfunction
+
+" A built-in helper menu that shows all arguments stored in the argparser's
+" argset. This is handy for showing a help menu without requiring a user of
+" argonaut to write one themselves.
+function! argonaut#argparser#show_help(parser) abort
+    call argonaut#argparser#verify(a:parser)
+    let l:set = a:parser.argset
+
+    " the argset must have been set for this function to run
+    if argonaut#utils#is_null(l:set)
+        let l:errmsg = 'this argparser does not have an argset; ' .
+                     \ 'a help menu cannot be shown'
+        call argonaut#utils#panic(l:errmsg)
+    endif
+
+    " if there are no arguments in the set, quit early
+    if len(l:set.arguments) == 0
+        echo 'There are no specific arguments.'
+        return
+    endif
+
+    echo 'Available arguments:'
+
+    " iterate through each argument
+    for l:arg in l:set.arguments
+        " build a string that shows all possible identifiers for the argument
+        let l:argid_str = ''
+        let l:argids_len = len(l:arg.identifiers)
+        for l:idx in range(l:argids_len)
+            let l:argid = l:arg.identifiers[l:idx]
+            let l:argid_str .= argonaut#argid#to_string(l:argid)
+
+            " if a value is required, show the value hint next to the first
+            " argid
+            if l:arg.value_required && l:idx == 0
+                let l:argid_str .= ' ' . l:arg.value_hint
+            endif
+
+            " add a delimeter if we're not on the last argid
+            if l:idx < l:argids_len - 1
+                let l:argid_str .= ', '
+            endif
+        endfor
+
+        " if the argument must be specified at least once, prefix the argid
+        " string with a special value to indicate this
+        let l:argid_prefix = '    '
+        if l:arg.presence_count_min > 0
+            let l:argid_prefix = '  * '
+        endif
+        echo l:argid_prefix . l:argid_str
+        
+        " show the argument's description (if one was provided)
+        if !argonaut#utils#is_empty(l:arg.description)
+            echo '        ' . l:arg.description
+        endif
+
+        " show the number of times the argument can (or must) be specified
+        let l:presence_count_str = ''
+        if l:arg.presence_count_min > 0
+            " if the presence min and max are both 1, then we'll word things
+            " differently
+            if l:arg.presence_count_min == 1 && l:arg.presence_count_max == 1
+                let l:presence_count_str .= 'This argument must be specified exactly once'
+            " otherwise, make sure to explain both numbers
+            else
+                let l:presence_count_str .= 'This argument must be specified at least ' .
+                                          \ l:arg.presence_count_min . ' times'
+                if l:arg.presence_count_max > 0
+                    let l:presence_count_str .= ', but no more than ' . 
+                                              \ l:arg.presence_count_max . ' times'
+                endif
+            endif
+
+        elseif l:arg.presence_count_max > 1
+            " only show this if the maximum is more than 1. Typically, an
+            " argument can be specified only once, so anything greater
+            " warrants some explanation
+            let l:presence_count_str .= 'This argument may be specified up to ' .
+                                      \ l:arg.presence_count_max . ' times'
+        endif
+        if !argonaut#utils#is_empty(l:presence_count_str)
+            echo '        ' . l:presence_count_str . '.'
+        endif
+    endfor
 endfunction
 
 " Attempts to split a given string by whitespace, while also factoring in
@@ -286,6 +407,17 @@ function! argonaut#argparser#parse(parser, str) abort
             let l:last_result = l:new_result
         endif
     endfor
+
+    " before checking presence counts and other requirements, check to see if
+    " we have a help argument specified. If so, check to see if the user
+    " specified it. If they did, we want to display the help menu before any
+    " errors below are triggered
+    let l:help_arg = a:parser.help_arg
+    let l:help_arg_str = argonaut#argid#to_string(l:help_arg.identifiers[0])
+    if !argonaut#utils#is_null(l:help_arg) &&
+     \ argonaut#argparser#has_arg(a:parser, l:help_arg_str)
+        call argonaut#argparser#show_help(a:parser)
+    endif
 
     " iterate through the argument set's argument specifications and count the
     " number of occurrences. Make sure they're within the required range

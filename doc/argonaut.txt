@@ -294,7 +294,7 @@ be provided after it in the user's command-line arguments.
 `argonaut#arg#get_value_hint(arg)`
 
 This takes in a string, which represents a hint value to be used in Argonaut's
-built-in help menu function, `argonaut#argset#show_help()`. Use this to
+built-in help menu function, `argonaut#argparser#show_help()`. Use this to
 communicate to the user what they should specify for this argument's value.
 
 
@@ -366,13 +366,6 @@ the arguments stored inside the argset. This may be useful if you want to
 implement custom tab completion logic for Argonaut that exceeds the built-in
 tab-completion.
 
-`argonaut#argset#show_help(argset)`
-
-This function displays a help menu, similar to the ones seen in Linux man pages
-or typical outputs from specifying `--help` in many command-line tools. This
-uses the arguments stored within the argset to generate a help menu with your
-custom arguments, their descriptions, their value hints, etc.
-
 
 ================================================================================
 ARGUMENT-PARSERS                                             *argonaut-argparsers*
@@ -392,6 +385,15 @@ Constructs and returns a new argparser.
 
 This sets/gets the argparser's argset. The argset is used during parsing, as
 described above.
+
+`argonaut#argparser#set_help_arg(argparser, help_arg)`
+`argonaut#argparser#get_help_arg(argparser)`
+
+This sets/gets the argparser's special help argument. The provided `help_arg`
+parameter should be a reference to one of the arguments within the argparser's
+argset. If this is set, during `argonaut#argparser#parse()`, the help menu will
+be displayed before any errors are thrown, so long as the user specifies this
+argument in their input.
 
 `argonaut#argparser#parse(argparser, str)`
 
@@ -415,6 +417,13 @@ field is set to true).
 
 This returns a list of values that were extracted during parsing, but did not
 match with any of the arguments defined in the argset.
+
+`argonaut#argparser#show_help(argset)`
+
+This function displays a help menu, similar to the ones seen in Linux man pages
+or typical outputs from specifying `--help` in many command-line tools. This
+uses the arguments stored within the argparser's argset to generate a help menu
+with your custom arguments, their descriptions, their value hints, etc.
 
 
 ================================================================================

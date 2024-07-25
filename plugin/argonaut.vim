@@ -64,7 +64,7 @@ function! s:argonaut_command(input)
 
     " if the help argument was provided by the user, show a help menu
     if argonaut#argparser#has_arg(l:parser, '-h')
-        call argonaut#argset#show_help(s:command_argset)
+        call argonaut#argparser#show_help(l:parser)
         return
     endif
 
