@@ -13,9 +13,9 @@
      |   \     |  |     /   |    * Easy configuration to add arguments to your
     |     \    |  |    /     |     Vim script/plugin commands.
     |      \   \__/   /      |   * Bash-like command-line argument parsing.
-    |       |        |       |   * Rich tab completion support.
-     \      |        |      /
-      \     |        |     /
+    |       |        |       |   * Support for environment variable retrieval
+     \      |        |      /      and in-line shell and Vim command execution.
+      \     |        |     /     * Rich tab completion support.
        \    |        |    /
         \__/          \__/
 
@@ -54,8 +54,9 @@ highly configurable interface to create and parse custom sets of command
 arguments. Give yourself and your plugin users a clean way to provide inputs to
 your software, directly from the Vim command line!
 
-If you've used Python's `argparse` library, or LibC's `getopt`, then you're
-familiar with the concept of command-line arguments:
+If you've used Python's `argparse` library, or LibC's `getopt`, or even just
+used a command-line interface at some point, then you're familiar with the
+concept of command-line arguments:
 
 >
     $ ls -l
@@ -101,10 +102,10 @@ number to duplicate:
     call argonaut#arg#add_argid(s:arg_line, argonaut#argid#new('-', 'l'))
     call argonaut#arg#add_argid(s:arg_line, argonaut#argid#new('--', 'line'))
 
-    " Set any other parameters, such as the minimum (and maximum) number of times the
-    " argument can be specified, and whether or not a value is expected. Below,
-    " we've said that the argument must be specified *once*, and it cannot be
-    " specified more than once:
+    " Set any other parameters, such as the minimum (and maximum) number of
+    times the " argument can be specified, and whether or not a value is
+    expected. Below, " we've said that the argument must be specified *once*,
+    and it cannot be " specified more than once:
 
     call argonaut#arg#set_value_required(s:arg_line, 1)
     call argonaut#arg#set_presence_count_min(s:arg_line, 1)
@@ -337,7 +338,7 @@ sensitive.
 
 
 ================================================================================
-ARGUMENT  -SETS                                                 *argonaut-argsets*
+ARGUMENT-SETS                                                   *argonaut-argsets*
 
 An argument set ('argset') is a grouping of arguments. Argument sets are used
 by the argument parser to search the user's input for strings that match the
@@ -374,7 +375,7 @@ custom arguments, their descriptions, their value hints, etc.
 
 
 ================================================================================
-ARGUMENT  -PARSERS                                           *argonaut-argparsers*
+ARGUMENT-PARSERS                                             *argonaut-argparsers*
 
 The argument parser ('argparser') performs the actual parsing logic in
 Argonaut. It accepts an argset as input and uses it to search provided strings
@@ -417,7 +418,7 @@ match with any of the arguments defined in the argset.
 
 
 ================================================================================
-SPECIAL  -INPUT-PARSING                                  *argonaut-special-inputs*
+SPECIAL-INPUT-PARSING                                    *argonaut-special-inputs*
 
 Want to execute a shell command in-line in an argument? A Vim command? Retrieve
 an environment variable? Argonaut supports the processing of special input
@@ -455,7 +456,7 @@ you'll end up with an empty string.
 
 
 ================================================================================
-COMMAND  -COMPLETION                                         *argonaut-completion*
+COMMAND-COMPLETION                                           *argonaut-completion*
 
 Argonaut provides a built-in function for tab-completing the arguments you
 specify in an argument set. You can take advantage of this by specifying the
