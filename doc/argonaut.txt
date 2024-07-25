@@ -32,7 +32,7 @@
 <
 
 ================================================================================
-CONTENTS                                                     *argonaut-contents*
+CONTENTS                                                       *argonaut-contents*
 
     INTRODUCTION .......................................... |argonaut-intro|
     QUICKSTART ....................................... |argonaut-quickstart|
@@ -45,7 +45,7 @@ CONTENTS                                                     *argonaut-contents*
 
 
 ================================================================================
-INTRODUCTION                                                    *argonaut-intro*
+INTRODUCTION                                                      *argonaut-intro*
 
 Argonaut is a plugin that's designed for Vim plugin developers and those that
 like to create their own custom Vim commands. It's not a plugin that provides a
@@ -81,7 +81,7 @@ commands with rich support for custom options and argument parsing.
 
 
 ================================================================================
-QUICKSTART                                                 *argonaut-quickstart*
+QUICKSTART                                                   *argonaut-quickstart*
 
 Follow along to get started with Argonaut quickly. Let's say you are creating a
 Vim command that duplicates a single line of code. What line of code should we
@@ -235,7 +235,7 @@ See |argonaut-completion|.
 
 
 ================================================================================
-ARGUMENTS                                                        *argonaut-args*
+ARGUMENTS                                                          *argonaut-args*
 
 In Argonaut, an 'argument' represents a single custom specification of a
 command-line option. An Argument has the following functions, which allow you
@@ -298,7 +298,7 @@ communicate to the user what they should specify for this argument's value.
 
 
 ================================================================================
-ARGUMENT-IDENTIFIERS                                           *argonaut-argids*
+ARGUMENT  -IDENTIFIERS                                           *argonaut-argids*
 
 Argument Identifiers, also called 'argids', represent individual strings that
 Argonaut can use to recognize specific arguments during parsing. They are made
@@ -337,7 +337,7 @@ sensitive.
 
 
 ================================================================================
-ARGUMENT-SETS                                                 *argonaut-argsets*
+ARGUMENT  -SETS                                                 *argonaut-argsets*
 
 An argument set ('argset') is a grouping of arguments. Argument sets are used
 by the argument parser to search the user's input for strings that match the
@@ -374,7 +374,7 @@ custom arguments, their descriptions, their value hints, etc.
 
 
 ================================================================================
-ARGUMENT-PARSERS                                           *argonaut-argparsers*
+ARGUMENT  -PARSERS                                           *argonaut-argparsers*
 
 The argument parser ('argparser') performs the actual parsing logic in
 Argonaut. It accepts an argset as input and uses it to search provided strings
@@ -417,12 +417,12 @@ match with any of the arguments defined in the argset.
 
 
 ================================================================================
-SPECIAL-INPUT-PARSING                                  *argonaut-special-inputs*
+SPECIAL  -INPUT-PARSING                                  *argonaut-special-inputs*
 
-Want to execute a shell command in-line in an argument? A vim command? An
-environment variable? Argonaut supports the processing of special input types.
-By default, everything is interpreted as a string, but the following syntax
-allows you to take advantage of argument post-processing:
+Want to execute a shell command in-line in an argument? A Vim command? Retrieve
+an environment variable? Argonaut supports the processing of special input
+types. By default, everything is interpreted as a string, but the following
+syntax allows you to take advantage of argument post-processing:
 
 SHELL COMMANDS: wrap a string with `$(` and `)` to have Argonaut interpret it
 as a shell command. The resulting output of the command will be stored in that
@@ -455,7 +455,7 @@ you'll end up with an empty string.
 
 
 ================================================================================
-COMMAND-COMPLETION                                         *argonaut-completion*
+COMMAND  -COMPLETION                                         *argonaut-completion*
 
 Argonaut provides a built-in function for tab-completing the arguments you
 specify in an argument set. You can take advantage of this by specifying the
