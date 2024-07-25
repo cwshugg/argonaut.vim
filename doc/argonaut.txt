@@ -34,13 +34,14 @@
 ================================================================================
 CONTENTS                                                     *argonaut-contents*
 
-    INTRODUCTION .............................................. |argonaut-intro|
-    QUICKSTART ........................................... |argonaut-quickstart|
-    ARGUMENTS .................................................. |argonaut-args|
-    ARGUMENT-IDENTIFIERS ..................................... |argonaut-argids|
-    ARGUMENT-SETS ........................................... |argonaut-argsets|
-    ARGUMENT-PARSERS ..................................... |argonaut-argparsers|
-    COMMAND-COMPLETION ................................... |argonaut-completion|
+    INTRODUCTION .......................................... |argonaut-intro|
+    QUICKSTART ....................................... |argonaut-quickstart|
+    ARGUMENTS .............................................. |argonaut-args|
+    ARGUMENT-IDENTIFIERS ................................. |argonaut-argids|
+    ARGUMENT-SETS ....................................... |argonaut-argsets|
+    ARGUMENT-PARSERS ................................. |argonaut-argparsers|
+    SPECIAL-INPUT-PARSING ........................ |argonaut-special-inputs|
+    COMMAND-COMPLETION ............................... |argonaut-completion|
 
 
 ================================================================================
@@ -219,7 +220,15 @@ checking for the presence of `++verbose`:
 <
 
 That's about it! At this point, we would do whatever we please with these
-values to implement our `DuplicateLine` command.
+values to implement our `DuplicateLine` command. We would invoke it like so (a
+few examples):
+
+>
+    :DuplicateLine -l 15 -c 10
+    :DuplicateLine --line 15 --count 10
+    :DuplicateLine --count 10 -l 15 +v
+    :DuplicateLine -c 10 --line 15 ++verbose
+<
 
 P.S. - want to have Argonaut automatically tab-complete your custom arguments?
 See |argonaut-completion|.
@@ -405,6 +414,44 @@ field is set to true).
 
 This returns a list of values that were extracted during parsing, but did not
 match with any of the arguments defined in the argset.
+
+
+================================================================================
+SPECIAL-INPUT-PARSING                                  *argonaut-special-inputs*
+
+Want to execute a shell command in-line in an argument? A vim command? An
+environment variable? Argonaut supports the processing of special input types.
+By default, everything is interpreted as a string, but the following syntax
+allows you to take advantage of argument post-processing:
+
+SHELL COMMANDS: wrap a string with `$(` and `)` to have Argonaut interpret it
+as a shell command. The resulting output of the command will be stored in that
+argument's value.
+
+>
+    :DuplicateLine -c 10 -l $(wc -l ./my_file.txt) ++verbose
+    :DuplicateLine -c $(cat ./number.txt) -l 15 ++verbose
+<
+
+VIM COMMANDS: wrap a string with `:(` and `)` to have Argonaut interpret it as
+a Vim command. The resulting output of the command will be stored in that
+argument's value. (You can even nest your own command!)
+
+>
+    :DuplicateLine -c 10 -l :(echo '15') ++verbose 
+    :DuplicateLine -c 10 -l :(YourCustomCommand) ++verbose 
+    :DuplicateLine -c 10 -l :(DuplicateLine -l 35) ++verbose 
+<
+
+ENVIRONMENT VARIABLES: prefix a string with `$`, or wrap it in `${` and `}`, to
+have Argonaut interpret it as an environment variable. If the variable exists,
+its value will be swapped in. If the environment variable does not exist,
+you'll end up with an empty string.
+
+>
+    :DuplicateLine -c ${MY_DUPLICATE_COUNT} -l 15 ++verbose 
+    :DuplicateLine -c 10 -l $LINE_NUMBER ++verbose 
+<
 
 
 ================================================================================
