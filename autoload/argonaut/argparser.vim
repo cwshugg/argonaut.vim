@@ -39,6 +39,7 @@ let s:argparser_nesting_pairs = [
     \ {'opener': '"',   'closer': '"',  'postprocess': v:null},
     \ {'opener': "'",   'closer': "'",  'postprocess': v:null},
     \ {'opener': "(",   'closer': ")",  'postprocess': v:null},
+    \ {'opener': "{",   'closer': "}",  'postprocess': v:null},
     \ {'opener': "$(",  'closer': ")",  'postprocess': 'shell'},
     \ {'opener': "${",  'closer': "}",  'postprocess': 'envvar'},
     \ {'opener': ":(",  'closer': ")",  'postprocess': 'vim_command'},
