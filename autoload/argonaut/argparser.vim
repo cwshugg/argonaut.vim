@@ -215,6 +215,7 @@ endfunction
 " strings surrounded by quotes. Returns a list of splitbit objects.
 function! argonaut#argparser#split(parser, str) abort
     let l:current_np = v:null
+    let l:np_stack = []
     let l:current_arg = v:null
     let l:args = []
     
@@ -230,101 +231,153 @@ function! argonaut#argparser#split(parser, str) abort
         if l:idx < l:str_len
             let l:char = a:str[l:idx]
         endif
-        let l:cease_arg_tracking = 0
 
-        " if we're currently not tracking a nesting pair...
-        if argonaut#utils#is_null(l:current_np)
-            " iterate through the nesting pairs and compare the opener
-            " string with the current string
-            for l:np in s:argparser_nesting_pairs
-                " make sure we have enough room left in the string to compare with
-                let l:np_opener = l:np.opener
-                let l:np_cmp_len = len(l:np_opener)
-                if l:np_cmp_len > l:str_len - l:idx
-                    continue
-                endif
-                
-                let l:np_cmp_str = strpart(a:str, l:idx, l:np_cmp_len)
-                if argonaut#utils#str_cmp(l:np_opener, l:np_cmp_str) &&
-                 \ !l:previous_backslash
-                    " if the current nesting pair matches, update
-                    " `l:current_np` to track the new nesting pair, and start
-                    " a new argument
-                    let l:current_np = l:np
-                    let l:current_arg = s:splitbit_new(l:current_np)
-                    break
-                endif
-            endfor
-
-            " if the above loop succeeded in finding a nesting pair, proceed
-            " to the next iteration of the main loop. Adjust our loop index
-            " such that the next character we land on is the first one that
-            " occurs after the nesting pair's opener string
-            if !argonaut#utils#is_null(l:current_np)
-                let l:idx += len(l:current_np.opener)
-                continue
-            endif
+        " if we're currently tracking a nesting pair (i.e. we have at least
+        " one entry in the stack)...
+        let l:np_stack_len = len(l:np_stack)
+        if l:np_stack_len > 0
+            let l:np = l:np_stack[0]
             
-            " additionally, if we're currently examining whitespace, we need to
-            " end the current argument
-            let l:is_whitespace = argonaut#utils#char_is_whitespace(l:char)
-            if l:is_whitespace
-                let l:cease_arg_tracking = 1
-            endif
-        " otherwise, if we currently ARE tracking a nesting pair...
-        else
-            " make sure we have enough room left in the string to compare with
-            let l:np_closer = l:current_np.closer
+            " retrieve the current stack entry's closer string
+            let l:np_closer = l:np.closer
             let l:np_cmp_len = len(l:np_closer)
+
+            " is there enough room left in the string to compare?
             if l:np_cmp_len <= l:str_len - l:idx
                 " if the current string matches with the nesting pair's closer, we
-                " need to end the current argument
+                " need to pop the current entry off of the stack
                 let l:np_cmp_str = strpart(a:str, l:idx, l:np_cmp_len)
                 if argonaut#utils#str_cmp(l:np_closer, l:np_cmp_str) &&
                  \ !l:previous_backslash
-                    " if the current nesting pair matches, update
-                    let l:cease_arg_tracking = 1
-                    let l:current_np = v:null
+                    " pop the top entry off the stack (at index 0)
+                    call remove(l:np_stack, 0)
+
+                    " was that the final entry in the stack? If so, we need to
+                    " stop tracking the current argument. Add it to our result
+                    " list and continue to the next loop iteration
+                    if l:np_stack_len == 1
+                        call add(l:args, l:current_arg)
+                        let l:current_arg = v:null
+                    " otherwise, if this isn't the final entry in the stack,
+                    " we want to include this closer string as part of the
+                    " current argument's string
+                    else
+                        call s:splitbit_add_text(l:current_arg, l:np_cmp_str)
+                    endif
+
+                    " in either case, shift past the closer string and skip to
+                    " the next iteration
+                    let l:idx += l:np_cmp_len
+                    continue
                 endif
             endif
         endif
+
+        " iterate through the nesting pairs and compare the opener string with
+        " the current string
+        let l:found_np_opener = v:false
+        for l:np in s:argparser_nesting_pairs
+            " make sure we have enough room left in the string to compare with
+            let l:np_opener = l:np.opener
+            let l:np_cmp_len = len(l:np_opener)
+            if l:np_cmp_len > l:str_len - l:idx
+                continue
+            endif
+            
+            let l:np_cmp_str = strpart(a:str, l:idx, l:np_cmp_len)
+            if argonaut#utils#str_cmp(l:np_opener, l:np_cmp_str) &&
+             \ !l:previous_backslash
+                " if a match is found, push it to the stack (this'll shift
+                " everything existing down and place the new item at index 0)
+                call insert(l:np_stack, l:np)
+
+                " was this the first entry on the stack? If so, we need to
+                " start tracking a new argument. Additionally, shift the
+                " string index down such that the next characters we examine
+                " are the ones immediately after the nesting pair's opener.
+                " Then, jump to the next loop iteration
+                if len(l:np_stack) == 1
+                    let l:current_arg = s:splitbit_new(l:np)
+                " otherwise, if this is a nesting pair that is nested within
+                " the first nesting pair, we want to include it as part of the
+                " argument's string
+                else
+                    call s:splitbit_add_text(l:current_arg, l:np_cmp_str)
+                endif
+
+                let l:found_np_opener = v:true
+                break
+            endif
+        endfor
+
+        " if the above loop succeeded in finding a nesting pair and pushing it
+        " to the stack, we need to shift the index down such that the next
+        " characters to examine are the ones that appear directly after the
+        " nesting pair's opener
+        if l:found_np_opener
+            let l:np = l:np_stack[0]
+            let l:idx += len(l:np.opener)
+            continue
+        endif
+
+        " now, if none of the above caused us to skip to the next iteration,
+        " we know that the current string didn't match a closer OR an opener.
+        " If we're currently tracking a nesting pair, we should add the
+        " current character as-is to the current argument, and continue to the
+        " next loop iteration
+        if l:np_stack_len > 0
+            call s:splitbit_add_text(l:current_arg, l:char)
+            let l:idx += 1
+            continue
+        endif
         
-        " if we've been told to finish the current argument, and we are in
-        " fact tracking an argument, we'll save it to our result list
-        if l:cease_arg_tracking
+        " at this point, we know the following:
+        "
+        " 1. The current string didn't match a nesting pair closer (if we're
+        "    even tracking a nesting pair)
+        " 1. The current string didn't match a nesting pair opener
+        " 2. We aren't currently tracking any nesting pair. We're looking at
+        "    text that's in the 'wide open'
+        "
+        " So, if we encounter whitespace at this point, do one of the
+        " following:
+        if argonaut#utils#char_is_whitespace(l:char)
+            " if we're tracking an argument at the moment, we need to stop
+            " tracking it, now what we've hit non-nested whitespace
             if !argonaut#utils#is_null(l:current_arg)
                 call add(l:args, l:current_arg)
                 let l:current_arg = v:null
             endif
-        " otherwise, start a new argument if we currently don't have one
-        elseif argonaut#utils#is_null(l:current_arg)
+            
+            " regardless of if we're tracking an argument or not, we are
+            " currently looking at non-nested whitespace. Continue to the next
+            " loop iteration
+            let l:idx += 1
+            continue
+        endif
+       
+        " at this point, we know that we're looking at a non-whitespace
+        " character. If we're not currently tracking an argument, create one
+        if argonaut#utils#is_null(l:current_arg)
             let l:current_arg = s:splitbit_new(v:null)
         endif
 
-        " finally, add the next character to our current argument string, as
-        " long as we're not in the final (extra) iteration
-        let l:previous_backslash = l:char == '\'
-        if !argonaut#utils#is_null(l:current_arg) && l:idx < l:str_len
-            let l:char = a:str[l:idx]
-            " if we're looking at a backslash, we want to skip the backslash,
-            " but remember that the next character is escaped
-            if !l:previous_backslash
-                call s:splitbit_add_text(l:current_arg, l:char)
-            endif
-        endif
-        
+        " add the current character to the current argument
+        call s:splitbit_add_text(l:current_arg, l:char)
+
         " move to the next character
         let l:idx += 1
     endwhile
-    
-    " at this point, we shouldn't have an unfinished argument, due to our
-    " extra iteration in the above loop
-    if !argonaut#utils#is_null(l:current_arg)
-        let l:errmsg = 'the provided string was not properly terminated: ' .
-                     \ '"' . a:str . '"'
+
+    " at this point, we should have an empty nesting pair stack. If we don't,
+    " then the user must not have added a corresponding closer to an opener
+    if len(l:np_stack) > 0
+        let l:np = l:np_stack[0]
+        let l:errmsg = 'syntax error: the opener string "' .
+                     \ l:np.opener . '" was not closed properly.'
         call argonaut#utils#panic(l:errmsg)
     endif
-
+    
     return l:args
 endfunction
 
