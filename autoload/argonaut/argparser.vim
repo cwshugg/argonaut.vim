@@ -38,6 +38,7 @@ let s:argparser_result_template = {
 let s:argparser_nesting_pairs = [
     \ {'opener': '"',   'closer': '"',  'postprocess': v:null},
     \ {'opener': "'",   'closer': "'",  'postprocess': v:null},
+    \ {'opener': "(",   'closer': ")",  'postprocess': v:null},
     \ {'opener': "$(",  'closer': ")",  'postprocess': 'shell'},
     \ {'opener': "${",  'closer': "}",  'postprocess': 'envvar'},
     \ {'opener': ":(",  'closer': ")",  'postprocess': 'vim_command'},
@@ -594,7 +595,7 @@ function! s:splitbit_postprocess(splitbit) abort
             let a:splitbit.text = l:envvar
         endif
     elseif l:np.postprocess == 'shell'
-        let l:shellout = argonaut#utils#run_shell_command(a:splitbit.text)
+        let l:shellout = trim(argonaut#utils#run_shell_command(a:splitbit.text))
         let a:splitbit.text = l:shellout
     elseif l:np.postprocess == 'vim_command'
         let l:vimout = ''
