@@ -97,5 +97,47 @@ call argonaut#argset#add_arg(s:argset, s:arg_command)
 ```
 
 Set up your command to execute a function. Have that function create an
-`argparser` object and execute it.
+`argparser` object and execute it. Make sure to set up a completion function to
+take advantage of Argonaut's command completion!
+
+```vim
+" Tab-completion function for `your_command`
+function! your_command_completion(arg, line, pos) abort
+    return argonaut#completion#complete(a:arg, a:line, a:pos, s:argset)
+endfunction
+
+" Main command function for `your_command`
+function! your_command(input) abort
+    let l:parser = argonaut#argparser#new(s:argset)
+    try
+        call argonaut#argparser#parse(l:parser, a:input)
+        
+        " did the user specify your `--help` command? If so, we can show the
+        " help menu and return
+        if argonaut#argparser#has_arg(l:parser, '-h')
+            call argonaut#argparser#show_help(l:parser)
+            return
+        endif
+
+        " ... your command logic ...
+    
+    catch
+        " before we show the error, check to see if the user specified your
+        " `--help` command. Not necessary, but handy if you want `--help` to be
+        " available even in the event of a parsing error!
+        if argonaut#argparser#has_arg(l:parser, '-h')
+            call argonaut#argparser#show_help(l:parser)
+        endif
+        echo string(v:exception)
+    endtry
+endfunction
+
+" Command declaration for `your_command`. Make sure to use `<q-args>` so the
+" Argonaut receives the command input as one concatenated string.
+command!
+    \ -nargs=*
+    \ -complete=customlist,your_command_completion
+    \ YourCommand
+    \ call your_command(<q-args>)
+```
 
