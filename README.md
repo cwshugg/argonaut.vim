@@ -20,7 +20,24 @@ Here is an example of Argonaut at work.
 
 ## Installation
 
-TODO
+Install Argonaut with your preferred plugin manager:
+
+```vim
+" Vundle:
+Plugin 'cwshugg/argonaut.vim'
+
+" vim-plug
+Plug 'cwshugg/argonaut.vim'
+
+" minpac
+call minpac#add('cwshugg/argonaut.vim')
+```
+
+Or, clone it manually:
+
+```bash
+$ git clone https://github.com/cwshugg/argonaut.vim ~/.vim/bundle/argonaut.vim
+```
 
 ## Getting Started
 
@@ -30,4 +47,55 @@ Once you've installed Argonaut, you can open up the help page within Vim:
 :h argonaut
 :h argonaut-quickstart
 ```
+
+### Quick Start
+
+Here's a quick look at how the plugin works. Start by setting up one or more
+argument objects:
+
+```vim
+" Help argument: to display the help menu
+let s:arg_help = argonaut#arg#new()
+call argonaut#arg#add_argid(s:arg_help, argonaut#argid#new('-', 'h'))
+call argonaut#arg#add_argid(s:arg_help, argonaut#argid#new('--', 'help'))
+
+" Username argument: for the user to input their username (required!)
+let s:arg_username = argonaut#arg#new()
+call argonaut#arg#add_argid(s:arg_username, argonaut#argid#new('-', 'u'))
+call argonaut#arg#add_argid(s:arg_username, argonaut#argid#new('--', 'name'))
+call argonaut#arg#add_argid(s:arg_username, argonaut#argid#new('--', 'username'))
+call argonaut#arg#set_presence_count_min(s:arg_username, 1)
+call argonaut#arg#set_value_required(s:arg_username, 1)
+call argonaut#arg#set_value_hint(s:arg_username, 'USERNAME')
+
+" Password argument: for the user to input their password (required!)
+let s:arg_password = argonaut#arg#new()
+call argonaut#arg#add_argid(s:arg_password, argonaut#argid#new('-', 'p'))
+call argonaut#arg#add_argid(s:arg_password, argonaut#argid#new('--', 'password'))
+call argonaut#arg#set_presence_count_min(s:arg_password, 1)
+call argonaut#arg#set_value_required(s:arg_password, 1)
+call argonaut#arg#set_value_hint(s:arg_password, 'USERNAME')
+
+" Command argument: for the user to specify commands to run once authenticated.
+" We'll configure this to allow the user to specify up to 10 commands.
+let s:arg_command = argonaut#arg#new()
+call argonaut#arg#add_argid(s:arg_command, argonaut#argid#new('+', 'c'))
+call argonaut#arg#add_argid(s:arg_command, argonaut#argid#new('++', 'command'))
+call argonaut#arg#set_presence_count_max(s:arg_command, 10)
+call argonaut#arg#set_value_required(s:arg_command, 1)
+call argonaut#arg#set_value_hint(s:arg_command, 'COMMAND_STRING')
+```
+
+Next, set up an argument set to contain all of your arguments:
+
+```vim
+let s:argset = argonaut#argset#new()
+call argonaut#argset#add_arg(s:argset, s:arg_help)
+call argonaut#argset#add_arg(s:argset, s:arg_username)
+call argonaut#argset#add_arg(s:argset, s:arg_password)
+call argonaut#argset#add_arg(s:argset, s:arg_command)
+```
+
+Set up your command to execute a function. Have that function create an
+`argparser` object and execute it.
 

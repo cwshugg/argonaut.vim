@@ -15,7 +15,6 @@
 let s:argparser_template = {
     \ 'argset': v:null,
     \ 'args': [],
-    \ 'help_arg': v:null
 \ }
 
 " Template object used to create 'splitbits', which is an intermediate object
@@ -90,40 +89,6 @@ endfunction
 function! argonaut#argparser#get_argset(parser) abort
     call argonaut#argparser#verify(a:parser)
     return get(a:parser, 'argset')
-endfunction
-
-" Setter for `help_arg`.
-function! argonaut#argparser#set_help_arg(parser, help_arg) abort
-    call argonaut#argparser#verify(a:parser)
-    call argonaut#arg#verify(a:help_arg)
-
-    " the argparser must have an argset at this point in time
-    if argonaut#utils#is_null(a:parser.argset)
-        let l:errmsg = 'the argparser must first be given an argset before ' .
-                     \ 'the help_arg can be set'
-        call argonaut#utils#panic(l:errmsg)
-    endif
-
-    " and, the argset must contain this argument
-    let l:help_arg_is_in_argset = v:false
-    for l:arg in a:parser.argset.arguments
-        if l:arg is a:help_arg
-            let l:help_arg_is_in_argset = v:true
-            break
-        endif
-    endfor
-    if !l:help_arg_is_in_argset
-        let l:errmsg = "the help_arg must be a part of the argparser's argset"
-        call argonaut#utils#panic(l:errmsg)
-    endif
-
-    let a:parser.help_arg = a:help_arg
-endfunction
-
-" Getter for `help_arg`.
-function! argonaut#argparser#get_help_arg(parser) abort
-    call argonaut#argparser#verify(a:parser)
-    return get(a:parser, 'help_arg')
 endfunction
 
 " A built-in helper menu that shows all arguments stored in the argparser's
@@ -462,17 +427,6 @@ function! argonaut#argparser#parse(parser, str) abort
             let l:last_result = l:new_result
         endif
     endfor
-
-    " before checking presence counts and other requirements, check to see if
-    " we have a help argument specified. If so, check to see if the user
-    " specified it. If they did, we want to display the help menu before any
-    " errors below are triggered
-    let l:help_arg = a:parser.help_arg
-    let l:help_arg_str = argonaut#argid#to_string(l:help_arg.identifiers[0])
-    if !argonaut#utils#is_null(l:help_arg) &&
-     \ argonaut#argparser#has_arg(a:parser, l:help_arg_str)
-        call argonaut#argparser#show_help(a:parser)
-    endif
 
     " iterate through the argument set's argument specifications and count the
     " number of occurrences. Make sure they're within the required range

@@ -386,15 +386,6 @@ Constructs and returns a new argparser.
 This sets/gets the argparser's argset. The argset is used during parsing, as
 described above.
 
-`argonaut#argparser#set_help_arg(argparser, help_arg)`
-`argonaut#argparser#get_help_arg(argparser)`
-
-This sets/gets the argparser's special help argument. The provided `help_arg`
-parameter should be a reference to one of the arguments within the argparser's
-argset. If this is set, during `argonaut#argparser#parse()`, the help menu will
-be displayed before any errors are thrown, so long as the user specifies this
-argument in their input.
-
 `argonaut#argparser#parse(argparser, str)`
 
 This is the main parsing function. Invoke this to have the argparser process
