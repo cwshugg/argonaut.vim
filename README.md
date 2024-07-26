@@ -12,13 +12,11 @@ Vim commands. It provides:
 
 Want to supercharge your Vim commands? Read on.
 
-## Examples
+## Demo
 
-Here are a few examples of Argonaut at work.
+Here is an example of Argonaut at work.
 
-
-TODO - asciinema GIFs!
-
+![](https://shugg.dev/images/argonaut.vim/argonaut_demo.gif)
 
 ## Installation
 
