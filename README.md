@@ -10,7 +10,7 @@ Vim commands. It provides:
 * Rich tab-completion support that auto-completes your custom arguments, file
   paths, environment variable names, etc.
 
-Want to supercharge your Vim commands? Read on.
+Want to supercharge your Vim commands? Check it:
 
 ## Demo
 
@@ -47,6 +47,9 @@ Once you've installed Argonaut, you can open up the help page within Vim:
 :h argonaut
 :h argonaut-quickstart
 ```
+
+This documents the entire function interface and the various objects that are
+provided and used by Argonaut.
 
 ### Quick Start
 
