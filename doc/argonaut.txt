@@ -389,8 +389,22 @@ described above.
 `argonaut#argparser#parse(argparser, str)`
 
 This is the main parsing function. Invoke this to have the argparser process
-the provided raw string (`str`). After parsing has finished, the following
-functions can be used to query the results:
+the provided raw string (`str`). A number of errors could be thrown during this
+function:
+
+* If an argument's minimum and/or maximum presence count is not met, an error
+  is thrown.
+* If an argument expects a value to be provided alongside it, but one is not,
+  an error is thrown.
+* If part of the input begins with one of the specified argid prefixes, but
+  doesn't match up with any known arguments, an "unrecognized argument" error
+  will be thrown.
+
+It's recommended that you wrap this function in a try-catch-entry to gracefully
+handle any parsing errors that arise.
+
+After parsing has finished, the following functions can be used to query the
+results:
 
 `argonaut#argparser#has_arg(argparser, argid_str)`
 

@@ -267,7 +267,6 @@ function! argonaut#arg#cmp_prefix(arg, str)
 
     for l:aid in a:arg.identifiers
         if argonaut#argid#cmp_prefix(l:aid, a:str)
-            echo 'MATCH: "' . a:str . '" --> ' . string(l:aid)
             call add(l:result, l:aid)
         endif
     endfor
