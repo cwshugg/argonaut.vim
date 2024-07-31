@@ -259,3 +259,18 @@ function! argonaut#arg#cmp(arg, str)
     return v:null
 endfunction
 
+" Compares against all of the argument's identifiers' prefixes. All argids
+" that match are returned in a list.
+function! argonaut#arg#cmp_prefix(arg, str)
+    call argonaut#arg#verify(a:arg)
+    let l:result = []
+
+    for l:aid in a:arg.identifiers
+        if argonaut#argid#cmp_prefix(l:aid, a:str)
+            echo 'MATCH: "' . a:str . '" --> ' . string(l:aid)
+            call add(l:result, l:aid)
+        endif
+    endfor
+    return l:result
+endfunction
+

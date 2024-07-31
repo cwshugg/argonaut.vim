@@ -126,6 +126,22 @@ function! argonaut#argset#cmp(set, str) abort
     return v:null
 endfunction
 
+" Compares the given string with all of the argument set's argument identifier
+" prefixes. A list of arguments who contain at least one matching identifier
+" is returned.
+function! argonaut#argset#cmp_prefix(set, str) abort
+    call argonaut#argset#verify(a:set)
+    let l:result = []
+
+    for l:arg in a:set.arguments
+        let l:matches = argonaut#arg#cmp_prefix(l:arg, a:str)
+        if len(l:matches) > 0
+            call add(l:result, l:arg)
+        endif
+    endfor
+    return l:result
+endfunction
+
 " Returns a list of all argid objects stored within the argset. This is handy
 " for implementing command completion on the argset's specific set of
 " commands.

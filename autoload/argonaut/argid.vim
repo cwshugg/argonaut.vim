@@ -159,3 +159,22 @@ function! argonaut#argid#cmp(aid, str) abort
     return argonaut#utils#str_cmp_case_insensitive(l:aid_str, a:str)
 endfunction
 
+" Compares the given string against the argid's prefix. If the string begins
+" with the prefix, true is returned.
+" If the argid has an empty prefix, this always returns false.
+function! argonaut#argid#cmp_prefix(aid, str) abort
+    call argonaut#argid#verify(a:aid)
+
+    " if the prefix is null or an empty string, return early; it's never
+    " considered to be a match
+    if argonaut#utils#is_empty(a:aid.prefix)
+        return v:false
+    endif
+    
+    " compare with the prefix, depending on case sensitivity
+    if a:aid.case_sensitive
+        return argonaut#utils#str_begins_with(a:str, a:aid.prefix)
+    endif
+    return argonaut#utils#str_begins_with_case_insensitive(a:str, a:aid.prefix)
+endfunction
+

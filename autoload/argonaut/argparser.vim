@@ -376,6 +376,17 @@ function! argonaut#argparser#parse(parser, str) abort
         " with any of the argument specifications within
         let l:match = argonaut#argset#cmp(a:parser.argset, l:splitbit.text)
 
+        " if there was no match, make sure the text doesn't start with one of
+        " the argset's prefixes. If so, we'll consider this to be an
+        " unrecognized argument
+        if argonaut#utils#is_null(l:match)
+            let l:pfx_matches = argonaut#argset#cmp_prefix(a:parser.argset, l:splitbit.text)
+            if len(l:pfx_matches) > 0
+                let l:errmsg = 'Unrecognized argument: "' . l:splitbit.text . '".'
+                call argonaut#utils#panic(l:errmsg)
+            endif
+        endif
+
         " create an argument parser result object and store it
         let l:new_result = s:argparser_result_new(l:match, v:null)
 
