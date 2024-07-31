@@ -23,7 +23,7 @@
 
 >
     If you find this plugin useful, I would greatly appreciate a star on
-    GitHub.  Stars help me understand how much attention this plugin is getting
+    GitHub. Stars help me understand how much attention this plugin is getting
     in the Vim community, and by extension how much time I should devote to
     improving it.
 
