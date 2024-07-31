@@ -125,12 +125,12 @@ function! your_command(input) abort
         " ... your command logic ...
     
     catch
-        " before we show the error, check to see if the user specified your
-        " `--help` command. Not necessary, but handy if you want `--help` to be
-        " available even in the event of a parsing error!
-        if argonaut#argparser#has_arg(l:parser, '-h')
-            call argonaut#argparser#show_help(l:parser)
-        endif
+        " ... your error handling logic ...
+        " (you may decide to check for your help argument here in the same way
+        " as above; depending on the parsing error that is encountered, the
+        " argparser may have been able to discover `-h`/`--help` before throwing
+        " the exception)
+
         echo string(v:exception)
     endtry
 endfunction
