@@ -247,11 +247,60 @@ endfunction
 " Compares against all of the argument's identifiers. If one of them matches,
 " the corresponding identifier object is returned. Otherwise, v:null is
 " returned.
+"
+" If this argument requires that a value be specified along with it, this
+" function will look for the situation where the given string *begins* with
+" the one of the argument's argids, but is immediately followed by an equals
+" sign ('='). If that's the case, all characters to the right of the equals
+" sign are considered to be the argument's value.
+"
+" The following dictionary is returned:
+"
+"   {'argid': (argid object), 'value': (value)}
+"
+" If an equals-sign-value is parsed, `(value)` will contain the string that
+" occurred after the equals sign. Otherwise, `(value)` will be set to
+" `v:null`.
+"
+" If a value is parsed and the argument does not expect a value, an error is
+" thrown.
 function! argonaut#arg#cmp(arg, str)
     call argonaut#arg#verify(a:arg)
+    let l:str_len = len(a:str)
+
     for l:aid in a:arg.identifiers
+        " first, compare the entire string. If it matches, return a dictionary
+        " with a null value
         if argonaut#argid#cmp(l:aid, a:str)
-            return l:aid
+            return {'argid': l:aid, 'value': v:null}
+        endif
+
+        " if this fails, extract the beginning portion of the string and
+        " compare against the argid (as long as the string is longer than the
+        " argid string's length)
+        let l:argid_str = argonaut#argid#to_string(l:aid)
+        let l:argid_len = len(l:argid_str)
+        if l:str_len <= l:argid_len
+            continue
+        endif
+        if argonaut#argid#cmp(l:aid, strpart(a:str, 0, l:argid_len))
+            " if the comparison succeeds, look at the immediate next character
+            " and determine if it's an equals sign
+            let l:nextchar = a:str[l:argid_len]
+            if l:nextchar != '='
+                continue
+            endif
+
+            " if it *is* an equals sign, grab everything after the equals sign
+            " and store it as the value string
+            let l:value = ''
+            let l:value_idx = l:argid_len + 1
+            if l:str_len > l:value_idx
+                let l:value .= strpart(a:str,
+                                     \ l:value_idx,
+                                     \ l:str_len - l:value_idx)
+            endif
+            return {'argid': l:aid, 'value': l:value}
         endif
     endfor
 

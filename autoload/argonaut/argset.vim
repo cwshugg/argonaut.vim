@@ -99,8 +99,8 @@ function! argonaut#argset#add_arg(set, arg) abort
     for l:new_argid in a:arg.identifiers
         let l:new_argid_str = argonaut#argid#to_string(l:new_argid)
         for l:a in a:set.arguments
-            let l:argid = argonaut#arg#cmp(l:a, l:new_argid_str)
-            if !argonaut#utils#is_null(l:argid)
+            let l:match = argonaut#arg#cmp(l:a, l:new_argid_str)
+            if !argonaut#utils#is_null(l:match)
                 let l:errmsg = 'the identifier "' . l:new_argid_str .
                              \ '" already exists in this argument set'
                 call argonaut#utils#panic(l:errmsg)
@@ -114,11 +114,17 @@ endfunction
 " Compares the given string with all of the argument set's arguments. The
 " first-found argument that has a match is returned. If nothing matches,
 " v:null is returned.
+"
+" The return value is a dictionary formatted like so:
+"
+"   {'arg': (arg object), 'argid': (matching argid object), 'value': (value)}
 function! argonaut#argset#cmp(set, str) abort
     call argonaut#argset#verify(a:set)
     for l:arg in a:set.arguments
-        if !argonaut#utils#is_null(argonaut#arg#cmp(l:arg, a:str))
-            return l:arg
+        let l:match = argonaut#arg#cmp(l:arg, a:str)
+        if !argonaut#utils#is_null(l:match)
+            call extend(l:match, {'arg': l:arg})
+            return l:match
         endif
     endfor
 

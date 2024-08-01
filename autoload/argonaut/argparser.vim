@@ -184,10 +184,10 @@ function! argonaut#argparser#split(parser, str) abort
     let l:np_stack = []
     let l:current_arg = v:null
     let l:args = []
+    let l:previous_escape = v:false
     
     " walk through the string, character by character
     let l:str_len = len(a:str)
-    let l:previous_backslash = 0
     let l:idx = 0
     while l:idx <= l:str_len
         " to make the below logic simpler, this loop is doing one extra
@@ -198,10 +198,27 @@ function! argonaut#argparser#split(parser, str) abort
             let l:char = a:str[l:idx]
         endif
 
+        " examine the current character for a backslash. This may be important
+        " to note on the following iteration, in case the user has escaped
+        " nesting pairs (or escaped a backslash itself)
+        if l:char == '\'
+            " if we found a backslash (and it wasn't preceded by a backslash),
+            " skip past it and flip the flag for the next iteration
+            if !l:previous_escape
+                let l:previous_escape = v:true
+                let l:idx += 1
+                continue
+            " otherwise, if this backslash *was* preceded by a backslash,
+            " clear the flag and proceed as normal
+            else
+                let l:previous_escape = v:false
+            endif
+        endif
+
         " if we're currently tracking a nesting pair (i.e. we have at least
         " one entry in the stack)...
         let l:np_stack_len = len(l:np_stack)
-        if l:np_stack_len > 0
+        if l:np_stack_len > 0 && !l:previous_escape
             let l:np = l:np_stack[0]
             
             " retrieve the current stack entry's closer string
@@ -213,8 +230,7 @@ function! argonaut#argparser#split(parser, str) abort
                 " if the current string matches with the nesting pair's closer, we
                 " need to pop the current entry off of the stack
                 let l:np_cmp_str = strpart(a:str, l:idx, l:np_cmp_len)
-                if argonaut#utils#str_cmp(l:np_closer, l:np_cmp_str) &&
-                 \ !l:previous_backslash
+                if argonaut#utils#str_cmp(l:np_closer, l:np_cmp_str)
                     " pop the top entry off the stack (at index 0)
                     call remove(l:np_stack, 0)
 
@@ -243,6 +259,12 @@ function! argonaut#argparser#split(parser, str) abort
         " the current string
         let l:found_np_opener = v:false
         for l:np in s:argparser_nesting_pairs
+            " if the current string was preceded by a backslash, we'll
+            " consider this to be 'escaped', and not look for an opener string
+            if l:previous_escape
+                break
+            endif
+
             " make sure we have enough room left in the string to compare with
             let l:np_opener = l:np.opener
             let l:np_cmp_len = len(l:np_opener)
@@ -251,23 +273,19 @@ function! argonaut#argparser#split(parser, str) abort
             endif
             
             let l:np_cmp_str = strpart(a:str, l:idx, l:np_cmp_len)
-            if argonaut#utils#str_cmp(l:np_opener, l:np_cmp_str) &&
-             \ !l:previous_backslash
+            if argonaut#utils#str_cmp(l:np_opener, l:np_cmp_str)
                 " if a match is found, push it to the stack (this'll shift
                 " everything existing down and place the new item at index 0)
                 call insert(l:np_stack, l:np)
 
-                " was this the first entry on the stack? If so, we need to
-                " start tracking a new argument. Additionally, shift the
-                " string index down such that the next characters we examine
-                " are the ones immediately after the nesting pair's opener.
-                " Then, jump to the next loop iteration
-                if len(l:np_stack) == 1
+                " if we're currently not tracking an argument, create one now
+                if argonaut#utils#is_null(l:current_arg)
                     let l:current_arg = s:splitbit_new(l:np)
-                " otherwise, if this is a nesting pair that is nested within
-                " the first nesting pair, we want to include it as part of the
-                " argument's string
-                else
+                endif
+
+                " if this wasn't the first entry on the nesting pair stack, we
+                " can add its opener sequence's text to the current argument
+                if len(l:np_stack) > 1
                     call s:splitbit_add_text(l:current_arg, l:np_cmp_str)
                 endif
 
@@ -373,13 +391,21 @@ function! argonaut#argparser#parse(parser, str) abort
         call s:splitbit_postprocess(l:splitbit)
 
         " search the parser's argument set to determine if the text identifies
-        " with any of the argument specifications within
+        " with any of the argument specifications within. It's possible that
+        " we'll receive a value here too, if the user specified the argument
+        " and value as a pair with the equals sign (example: `--name=connor`)
         let l:match = argonaut#argset#cmp(a:parser.argset, l:splitbit.text)
+        let l:match_arg = v:null
+        let l:match_value = v:null
+        if !argonaut#utils#is_null(l:match)
+            let l:match_arg = get(l:match, 'arg')
+            let l:match_value = get(l:match, 'value')
+        endif
 
         " if there was no match, make sure the text doesn't start with one of
         " the argset's prefixes. If so, we'll consider this to be an
         " unrecognized argument
-        if argonaut#utils#is_null(l:match)
+        if argonaut#utils#is_null(l:match_arg)
             let l:pfx_matches = argonaut#argset#cmp_prefix(a:parser.argset, l:splitbit.text)
             if len(l:pfx_matches) > 0
                 let l:errmsg = 'Unrecognized argument: "' . l:splitbit.text . '".'
@@ -388,11 +414,11 @@ function! argonaut#argparser#parse(parser, str) abort
         endif
 
         " create an argument parser result object and store it
-        let l:new_result = s:argparser_result_new(l:match, v:null)
+        let l:new_result = s:argparser_result_new(l:match_arg, v:null)
 
         " if this argument doesn't match one of the arguments in the argument
         " set, there are one of two possibilities:
-        if argonaut#utils#is_null(l:match)
+        if argonaut#utils#is_null(l:match_arg)
             " possibility 1: the last iteration's result was stored, which
             " means the previous argument requires a value. Save this
             " splitbit's value to the previous result
@@ -415,7 +441,9 @@ function! argonaut#argparser#parse(parser, str) abort
         let l:arg_with_missing_value = v:null
         if !argonaut#utils#is_null(l:last_result)
             let l:arg_with_missing_value = l:last_result
-        elseif l:match.value_required && l:idx == l:splitbits_len - 1
+        elseif l:match_arg.value_required &&
+             \ l:idx == l:splitbits_len - 1 &&
+             \ argonaut#utils#is_null(l:match_value)
             let l:arg_with_missing_value = l:new_result
         endif
         if !argonaut#utils#is_null(l:arg_with_missing_value)
@@ -427,14 +455,36 @@ function! argonaut#argparser#parse(parser, str) abort
         endif
 
         " increment the result's presence counter and add it to the parser
-        let l:presence_counts_key = argonaut#argid#to_string(l:match.identifiers[0])
+        let l:presence_counts_key = argonaut#argid#to_string(l:match_arg.identifiers[0])
         let l:presence_counts[l:presence_counts_key] += 1
         call add(a:parser.args, l:new_result)
 
-        " if the matched argument specification requires that a value be
-        " specified along with it, set `l:last_result` so we can capture this
-        " value on the next iteration
-        if l:match.value_required
+        " if we received a value from the user specifying it with an equals
+        " sign, then `l:match_value` will contain that value.
+        if !argonaut#utils#is_null(l:match_value)
+            " if the argument expects a value to be specified, then perfect!
+            " Save the value to the current result
+            if l:match_arg.value_required
+                let l:new_result.value = l:match_value
+            " otherwise, if this argument does *not* expect a value, but the
+            " user specified one anyway, we need to throw an error
+            else
+                let l:arg_str = argonaut#argid#to_string(l:match_arg.identifiers[0])
+                let l:errmsg = 'the argument "' . l:arg_str .
+                             \ '" should not be specified with a value'
+                call argonaut#utils#panic(l:errmsg)
+            endif
+
+            continue
+        endif
+        
+        " at this point, if the matched argument specification requires that a
+        " value be specified along with the argument, and the user hasn't
+        " provided one in this iteration (by using the equals sign, i.e.
+        " `--name=connor`), then we're expecting to see it show up in the next
+        " iteration.
+        " So, set `l:last_result` so we can capture this value next.
+        if l:match_arg.value_required
             let l:last_result = l:new_result
         endif
     endfor
