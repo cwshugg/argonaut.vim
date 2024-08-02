@@ -184,7 +184,7 @@ function! argonaut#argparser#split(parser, str) abort
     let l:np_stack = []
     let l:current_arg = v:null
     let l:args = []
-    let l:previous_escape = v:false
+    let l:escape_distance = -1
     
     " walk through the string, character by character
     let l:str_len = len(a:str)
@@ -201,24 +201,22 @@ function! argonaut#argparser#split(parser, str) abort
         " examine the current character for a backslash. This may be important
         " to note on the following iteration, in case the user has escaped
         " nesting pairs (or escaped a backslash itself)
-        if l:char == '\'
-            " if we found a backslash (and it wasn't preceded by a backslash),
-            " skip past it and flip the flag for the next iteration
-            if !l:previous_escape
-                let l:previous_escape = v:true
-                let l:idx += 1
-                continue
-            " otherwise, if this backslash *was* preceded by a backslash,
-            " clear the flag and proceed as normal
-            else
-                let l:previous_escape = v:false
-            endif
+        if l:char == '\' && l:escape_distance != 0
+            let l:escape_distance = 0
+            let l:idx += 1
+            continue
+        endif
+
+        " if we previous encountered an escape (meaning `l:escape_distance` is
+        " no longer negative), increment the distance counter
+        if l:escape_distance >= 0
+            let l:escape_distance += 1
         endif
 
         " if we're currently tracking a nesting pair (i.e. we have at least
         " one entry in the stack)...
         let l:np_stack_len = len(l:np_stack)
-        if l:np_stack_len > 0 && !l:previous_escape
+        if l:np_stack_len > 0 && l:escape_distance != 1
             let l:np = l:np_stack[0]
             
             " retrieve the current stack entry's closer string
@@ -261,7 +259,7 @@ function! argonaut#argparser#split(parser, str) abort
         for l:np in s:argparser_nesting_pairs
             " if the current string was preceded by a backslash, we'll
             " consider this to be 'escaped', and not look for an opener string
-            if l:previous_escape
+            if l:escape_distance == 1
                 break
             endif
 
