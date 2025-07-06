@@ -13,12 +13,19 @@
 "    must be matched with the specified case. If true, comparisons only
 "    succeed on exact matches. If false, comparisons will succeed
 "    case-insensitively.
+"  * `show_in_autocomplete` - A boolean that indicates whether or not the
+"    identifier is shown to the user when using command autocomplete. This is
+"    useful when a command has several argids, and the programmer only wants
+"    one or two to show up (to waste less of the user's time cycling through a
+"    list of argids that all point to the same command). This is enabled by
+"    default for all argids.
 
 " Template object used to create and format all argument identifier objects.
 let s:argid_template = {
     \ 'name': '',
     \ 'prefix': '-',
-    \ 'case_sensitive': 1
+    \ 'case_sensitive': 1,
+    \ 'show_in_autocomplete': 1
 \ }
 
 
@@ -139,6 +146,18 @@ endfunction
 function! argonaut#argid#get_case_sensitive(aid) abort
     call argonaut#argid#verify(a:aid)
     return get(a:aid, 'case_sensitive')
+endfunction
+
+" Setter for `show_in_autocomplete`.
+function! argonaut#argid#set_show_in_autocomplete(aid, show_in_autocomplete) abort
+    call argonaut#argid#verify(a:aid)
+    let a:aid.show_in_autocomplete = argonaut#utils#sanitize_bool(a:show_in_autocomplete)
+endfunction
+
+" Getter for `show_in_autocomplete`.
+function! argonaut#argid#get_show_in_autocomplete(aid) abort
+    call argonaut#argid#verify(a:aid)
+    return get(a:aid, 'show_in_autocomplete')
 endfunction
 
 " Compares against the given string and returns true if the string matches the

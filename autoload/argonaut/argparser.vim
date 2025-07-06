@@ -374,6 +374,15 @@ function! argonaut#argparser#parse(parser, str) abort
     " argset
     let l:presence_counts = {}
     for l:arg in a:parser.argset.arguments
+        " do a sanity check: each argument must have at least one identifier.
+        " If it doesn't, panic
+        if len(l:arg.identifiers) == 0
+            let l:errmsg = 'An argument was found without any identifiers. All arguments must have at least one identifier.'
+            call argonaut#utils#panic(l:errmsg)
+        endif
+
+        " conver the first argument to a string, and store it in the presence
+        " counter dictionary
         let l:key = argonaut#argid#to_string(l:arg.identifiers[0])
         let l:presence_counts[l:key] = 0
     endfor

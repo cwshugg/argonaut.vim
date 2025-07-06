@@ -299,7 +299,7 @@ communicate to the user what they should specify for this argument's value.
 
 
 ================================================================================
-ARGUMENT  -IDENTIFIERS                                           *argonaut-argids*
+ARGUMENT-IDENTIFIERS                                             *argonaut-argids*
 
 Argument Identifiers, also called 'argids', represent individual strings that
 Argonaut can use to recognize specific arguments during parsing. They are made
@@ -335,6 +335,16 @@ This sets/gets the argid's prefix value. The prefix cannot contain whitespace.
 This sets/gets a boolean flag that indicates if parsing can match user input to
 this identifier regardless of letter case. If it's true, the match is case
 sensitive.
+
+`argonaut#argid#set_show_in_autocomplete(argid, show_in_autocomlete)`
+`argonaut#argid#get_show_in_autocomplete(argid)`
+
+This sets/gets a boolean flag that indicates if the argid will appear when the
+user is using Argonaut's tab-completion. This is useful if you have a single
+command with several argids, but only want one or two to show to the user in
+autocomplete, to waste less time cycling through argids.
+
+By default, all argids have `show_in_autocomplete` set to `1` (`true`).
 
 
 ================================================================================

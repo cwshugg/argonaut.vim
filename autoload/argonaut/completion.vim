@@ -41,6 +41,12 @@ function! argonaut#completion#complete_argids(arglead, cmdline, cursorpos, argse
     " matches the beginning of the argument. If it does, add it to a final
     " result
     for l:argid in l:argids
+        " is this argid configured to *not* show up in autocomplete? If so,
+        " skip it
+        if !argonaut#argid#get_show_in_autocomplete(l:argid)
+            continue
+        endif
+
         let l:argid_str = argonaut#argid#to_string(l:argid)
 
         " if this argid allows for case-insensitive matching, we'll compare
