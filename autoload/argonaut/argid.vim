@@ -44,14 +44,9 @@ function! argonaut#argid#new(...) abort
         let l:result.name = argonaut#utils#sanitize_value(a:2)
     endif
     
-    " argument 3 (if provided) represents the case sensitivity
-    if a:0 > 2
-        let l:result.case_sensitive = argonaut#utils#sanitize_bool(a:3)
-    endif
-
     " make sure too many arguments weren't provided
-    if a:0 > 3
-        let l:errmsg = 'argonaut#argid#new() accepts no more than 3 arguments'
+    if a:0 > 2
+        let l:errmsg = 'argonaut#argid#new() accepts no more than 2 arguments'
         call argonaut#utils#panic(l:errmsg)
     endif
 
